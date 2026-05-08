@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영어 표현 노트</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- 왼쪽 목차 -->
+  <div id="sidebar">
+    <div class="sidebar-title">MomoNote</div>
+    <div id="nav-tree"></div>
+  </div>
+
+  <!-- 오른쪽 메인 -->
+  <div id="main">
+
+    <!-- 등록 영역 -->
+    <div id="compose">
+      <div class="compose-grid">
+        <input type="text" id="inp-en"  placeholder="영어 표현 (예: break a leg)" />
+        <input type="text" id="inp-ko"  placeholder="한글 의미 (예: 행운을 빌어)" />
+        <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="full-row" />
+        <input type="file" id="inp-img" accept="image/*,.gif" class="full-row" />
+      </div>
+      <div class="compose-bottom">
+        <button class="btn-post" id="btn-post">등록</button>
+      </div>
+    </div>
+
+    <!-- 타임라인 헤더 (필터) -->
+    <div id="timeline-header">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">전체</button>
+        <button class="filter-tab" data-filter="unknown">모르는 것만</button>
+        <button class="filter-tab" data-filter="known">아는 것만</button>
+      </div>
+    </div>
+
+    <!-- 타임라인 -->
+    <div id="timeline"></div>
+
+  </div>
+</div>
+
+<!-- type="module" 필수 (Firebase ES module 방식) -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
