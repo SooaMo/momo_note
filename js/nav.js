@@ -62,6 +62,11 @@ export function toggleNav(key) {
 export function scrollToAnchor(dateKey) {
   const el = document.getElementById("anchor-" + dateKey);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 모바일에서 목차 클릭 후 자동으로 닫기
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebar-overlay").classList.remove("open");
+  }
 }
 
 // onclick에서 전역 접근 가능하도록 window에 등록

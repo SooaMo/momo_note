@@ -10,9 +10,15 @@
 
 <div id="app">
 
+  <!-- 모바일 오버레이 -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
   <!-- 왼쪽 목차 -->
   <div id="sidebar">
-    <div class="sidebar-title">MomoNote</div>
+    <div class="sidebar-header">
+      <div class="sidebar-title">목차</div>
+      <button id="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
     <div id="nav-tree"></div>
   </div>
 
@@ -32,8 +38,9 @@
       </div>
     </div>
 
-    <!-- 타임라인 헤더 (필터) -->
+    <!-- 타임라인 헤더 (필터 + 모바일 목차 버튼) -->
     <div id="timeline-header">
+      <button id="nav-toggle-btn" onclick="openSidebar()">☰ 목차</button>
       <div class="filter-tabs">
         <button class="filter-tab active" data-filter="all">전체</button>
         <button class="filter-tab" data-filter="unknown">모르는 것만</button>
@@ -47,7 +54,6 @@
   </div>
 </div>
 
-<!-- type="module" 필수 (Firebase ES module 방식) -->
 <script type="module" src="js/app.js"></script>
 
 </body>
