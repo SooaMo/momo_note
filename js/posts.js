@@ -8,17 +8,25 @@ export async function loadPosts() {
 
 export async function addPost(en, ko, src, img) {
   const post = {
-    id:     Date.now(),
-    en,
-    ko,
-    src,
-    img,
-    ts:     new Date().toISOString(),
-    status: "none"
+    id:       Date.now(),
+    en, ko, src, img,
+    ts:       new Date().toISOString(),
+    status:   "none",
+    comments: []
   };
   posts.unshift(post);
   await Storage.saveOne(post);
   return post;
+}
+
+export async function updatePost(id, { en, ko, src, img }) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  post.en  = en;
+  post.ko  = ko;
+  post.src = src;
+  if (img !== undefined) post.img = img;
+  await Storage.saveOne(post);
 }
 
 export async function deletePost(id) {
@@ -33,6 +41,26 @@ export async function toggleStatus(id, status) {
   await Storage.saveOne(post);
 }
 
+export async function addComment(postId, name, text) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  if (!post.comments) post.comments = [];
+  post.comments.push({
+    cid:  Date.now(),
+    name: name.trim(),
+    text: text.trim(),
+    ts:   new Date().toISOString()
+  });
+  await Storage.saveOne(post);
+}
+
+export async function deleteComment(postId, cid) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  post.comments = (post.comments || []).filter(c => c.cid !== cid);
+  await Storage.saveOne(post);
+}
+
 export function getFilteredPosts(filter) {
   if (filter === "known")   return posts.filter(p => p.status === "known");
   if (filter === "unknown") return posts.filter(p => p.status === "unknown" || p.status === "none");
@@ -40,7 +68,7 @@ export function getFilteredPosts(filter) {
 }
 
 export function fmtTs(iso) {
-  const d = new Date(iso);
+  const d    = new Date(iso);
   const yyyy = d.getFullYear();
   const mm   = String(d.getMonth() + 1).padStart(2, "0");
   const dd   = String(d.getDate()).padStart(2, "0");
@@ -55,7 +83,7 @@ export function getDateKey(iso) {
 }
 
 export function esc(str) {
-  return str
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
