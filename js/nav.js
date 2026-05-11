@@ -62,7 +62,21 @@ export function renderNav(filteredPosts) {
     html = '<div style="padding:8px 12px;font-size:12px;color:#bbb">항목 없음</div>';
   }
 
+  // 언어 전환 버튼
+  const currentPage = window.location.pathname;
+  const isEng = !currentPage.includes("french");
+  const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
+
   document.getElementById("nav-tree").innerHTML = html;
+
+  // 언어 switcher는 nav-tree 아래 별도 영역에
+  const switcher = document.getElementById("lang-switcher");
+  if (switcher) {
+    switcher.innerHTML = `
+      <a href="${basePath}index.html"  class="${isEng  ? "lang-active" : ""}">🇬🇧 English</a>
+      <a href="${basePath}french.html" class="${!isEng ? "lang-active" : ""}">🇫🇷 Français</a>
+    `;
+  }
 }
 
 export function toggleNav(key) {

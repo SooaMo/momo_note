@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MomoNote</title>
+  <title>MomoNote — Français</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -30,9 +30,9 @@
       <!-- 등록 영역 (데스크탑) -->
       <div id="compose">
         <div class="compose-grid">
-          <input type="text" id="inp-en"  placeholder="영어 표현 (예: break a leg)" />
-          <input type="text" id="inp-ko"  placeholder="설명 (예: 행운을 빌어)" />
-          <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" />
+          <input type="text" id="inp-en"  placeholder="불어 표현 (예: C'est la vie)" />
+          <input type="text" id="inp-ko"  placeholder="설명 (예: 인생이란 그런 거야)" />
+          <input type="text" id="inp-src" placeholder="출처 (예: 드라마, 책 이름…)" class="src-input" />
           <input type="file" id="inp-img" accept="image/*,.gif" class="img-input" />
         </div>
         <div class="compose-bottom">
@@ -69,7 +69,7 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid">
-        <input type="text" id="mob-en" placeholder="영어 표현" />
+        <input type="text" id="mob-en" placeholder="불어 표현" />
         <input type="text" id="mob-ko" placeholder="설명" />
         <input type="text" id="mob-src" placeholder="출처" class="modal-full-row" />
       </div>
@@ -92,7 +92,7 @@
     <input type="hidden" id="edit-id" />
     <div class="modal-body">
       <div class="modal-grid">
-        <input type="text" id="edit-en"  placeholder="영어 표현" />
+        <input type="text" id="edit-en"  placeholder="불어 표현" />
         <input type="text" id="edit-ko"  placeholder="설명" />
         <input type="text" id="edit-src" placeholder="출처" class="modal-full-row" />
       </div>
@@ -106,8 +106,8 @@
   </div>
 </div>
 
-<!-- 언어 설정: 이 줄이 현재 페이지의 Firestore 컬렉션을 결정 -->
-<script>window.__LANG_COL__ = "eng_posts";</script>
+<!-- 언어 설정 -->
+<script>window.__LANG_COL__ = "fra_posts";</script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

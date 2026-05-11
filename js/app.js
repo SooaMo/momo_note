@@ -17,15 +17,52 @@ let filter  = "all";
 let imgData = null;
 
 /* ══════════════════════════════
+   이미지 압축 (PNG/JPEG 모두)
+   최대 800px, JPEG quality 0.75
+   → Firestore 1MB 제한 대응
+══════════════════════════════ */
+function compressImage(file, maxSize = 800, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // 긴 쪽을 maxSize에 맞게 비율 유지 축소
+        if (width > height && width > maxSize) {
+          height = Math.round(height * maxSize / width);
+          width  = maxSize;
+        } else if (height > width && height > maxSize) {
+          width  = Math.round(width  * maxSize / height);
+          height = maxSize;
+        } else if (width > maxSize) {
+          height = Math.round(height * maxSize / width);
+          width  = maxSize;
+        }
+
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+
+        // PNG도 JPEG으로 변환해서 용량 대폭 감소
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ══════════════════════════════
    등록 (데스크탑)
 ══════════════════════════════ */
 function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, onDone) {
-  document.getElementById(imgInputId).addEventListener("change", e => {
+  document.getElementById(imgInputId).addEventListener("change", async e => {
     const file = e.target.files[0];
     if (!file) { imgData = null; return; }
-    const reader = new FileReader();
-    reader.onload = ev => { imgData = ev.target.result; };
-    reader.readAsDataURL(file);
+    imgData = await compressImage(file);
   });
 
   document.getElementById(btnId).addEventListener("click", async () => {
@@ -116,16 +153,12 @@ window.removeEditImg = () => {
   document.getElementById("edit-img-preview").innerHTML = '<span style="color:#bbb;font-size:12px">이미지 삭제됨</span>';
 };
 
-document.getElementById("edit-img").addEventListener("change", e => {
+document.getElementById("edit-img").addEventListener("change", async e => {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    editImgData = ev.target.result;
-    document.getElementById("edit-img-preview").innerHTML =
-      `<img src="${editImgData}" alt="새 이미지" />`;
-  };
-  reader.readAsDataURL(file);
+  editImgData = await compressImage(file);
+  document.getElementById("edit-img-preview").innerHTML =
+    `<img src="${editImgData}" alt="새 이미지" />`;
 });
 
 document.getElementById("btn-edit-save").addEventListener("click", async () => {
