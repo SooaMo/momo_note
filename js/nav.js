@@ -1,5 +1,10 @@
 import { getDateKey } from "./posts.js";
 
+// 현재 선택된 nav 필터 (null = 전체, {y} = 연도, {y,m} = 월, {y,m,day} = 일)
+let navFilter = null;
+
+export function getNavFilter() { return navFilter; }
+
 export function renderNav(filteredPosts) {
   const tree = {};
 
@@ -12,30 +17,39 @@ export function renderNav(filteredPosts) {
 
   let html = "";
 
+  // 전체보기 버튼
+  const allActive = navFilter === null ? "nav-active" : "";
+  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null)">전체보기</div>`;
+
   Object.keys(tree).sort((a, b) => b - a).forEach(y => {
-    const yKey = `y${y}`;
+    const yKey    = `y${y}`;
+    const yActive = navFilter && navFilter.y == y && !navFilter.m ? "nav-active" : "";
     html += `
       <div class="nav-year">
-        <div class="nav-year-label" onclick="toggleNav('${yKey}')">
-          <span class="nav-toggle open" id="tog-${yKey}">▶</span>${y}년
+        <div class="nav-year-label ${yActive}" onclick="setNavFilter({y:${y}})">
+          <span class="nav-toggle open" id="tog-${yKey}" onclick="event.stopPropagation();toggleNav('${yKey}')">▶</span>
+          ${y}년
         </div>
         <div class="nav-children open" id="ch-${yKey}">
     `;
 
     Object.keys(tree[y]).sort((a, b) => b - a).forEach(m => {
-      const mKey  = `m${y}-${m}`;
-      const mName = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"][+m - 1];
+      const mKey    = `m${y}-${m}`;
+      const mName   = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"][+m - 1];
+      const mActive = navFilter && navFilter.y == y && navFilter.m == m && !navFilter.day ? "nav-active" : "";
 
       html += `
         <div class="nav-month">
-          <div class="nav-month-label" onclick="toggleNav('${mKey}')">
-            <span class="nav-toggle open" id="tog-${mKey}">▶</span>${mName}
+          <div class="nav-month-label ${mActive}" onclick="setNavFilter({y:${y},m:${m}})">
+            <span class="nav-toggle open" id="tog-${mKey}" onclick="event.stopPropagation();toggleNav('${mKey}')">▶</span>
+            ${mName}
           </div>
           <div class="nav-children open" id="ch-${mKey}">
       `;
 
       [...tree[y][m]].sort((a, b) => b - a).forEach(day => {
-        html += `<div class="nav-day" onclick="scrollToAnchor('${y}-${m}-${day}')">${String(day).padStart(2, "0")}일</div>`;
+        const dActive = navFilter && navFilter.y == y && navFilter.m == m && navFilter.day == day ? "nav-active" : "";
+        html += `<div class="nav-day ${dActive}" onclick="setNavFilter({y:${y},m:${m},day:${day}})">${String(day).padStart(2, "0")}일</div>`;
       });
 
       html += `</div></div>`;
@@ -59,16 +73,15 @@ export function toggleNav(key) {
   tog.classList.toggle("open");
 }
 
-export function scrollToAnchor(dateKey) {
-  const el = document.getElementById("anchor-" + dateKey);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  // 모바일에서 목차 클릭 후 자동으로 닫기
+window.toggleNav = toggleNav;
+
+window.setNavFilter = (f) => {
+  navFilter = f;
+  // 모바일에서 선택 후 사이드바 닫기
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebar-overlay").classList.remove("open");
   }
-}
-
-// onclick에서 전역 접근 가능하도록 window에 등록
-window.toggleNav      = toggleNav;
-window.scrollToAnchor = scrollToAnchor;
+  // app.js의 render 호출
+  if (window.__renderApp) window.__renderApp();
+};

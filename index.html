@@ -24,41 +24,64 @@
 
   <!-- 오른쪽 메인 -->
   <div id="main">
-
     <div class="content-wrap">
 
-    <!-- 등록 영역 -->
-    <div id="compose">
-      <div class="compose-grid">
-        <input type="text" id="inp-en"  placeholder="영어 표현 (예: break a leg)" />
-        <input type="text" id="inp-ko"  placeholder="한글 의미 (예: 행운을 빌어)" />
-        <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" />
-        <input type="file" id="inp-img" accept="image/*,.gif" class="img-input" />
+      <!-- 등록 영역 (데스크탑) -->
+      <div id="compose">
+        <div class="compose-grid">
+          <input type="text" id="inp-en"  placeholder="영어 표현 (예: break a leg)" />
+          <input type="text" id="inp-ko"  placeholder="한글 의미 (예: 행운을 빌어)" />
+          <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" />
+          <input type="file" id="inp-img" accept="image/*,.gif" class="img-input" />
+        </div>
+        <div class="compose-bottom">
+          <button class="btn-post" id="btn-post">등록</button>
+        </div>
       </div>
-      <div class="compose-bottom">
-        <button class="btn-post" id="btn-post">등록</button>
-      </div>
-    </div>
 
-    <!-- 타임라인 헤더 (필터 + 모바일 목차 버튼) -->
-    <div id="timeline-header">
-      <button id="nav-toggle-btn" onclick="openSidebar()">☰ 목차</button>
-      <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="all">전체</button>
-        <button class="filter-tab" data-filter="unknown">모르는 것만</button>
-        <button class="filter-tab" data-filter="known">아는 것만</button>
+      <!-- 타임라인 헤더 (필터 고정) -->
+      <div id="timeline-header">
+        <button id="nav-toggle-btn" onclick="openSidebar()">☰ 목차</button>
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">전체</button>
+          <button class="filter-tab" data-filter="unknown">모르는 것만</button>
+          <button class="filter-tab" data-filter="known">아는 것만</button>
+        </div>
       </div>
-    </div>
 
-    <!-- 타임라인 -->
-    <div id="timeline"></div>
+      <!-- 타임라인 -->
+      <div id="timeline"></div>
 
     </div><!-- /.content-wrap -->
-
   </div>
 </div>
 
-<!-- 수정 팝업: body 최상단에 독립적으로 위치 -->
+<!-- 모바일 FAB -->
+<button id="fab" onclick="openMobCompose()">＋</button>
+
+<!-- 모바일 글쓰기 팝업 -->
+<div id="mob-compose-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">새 표현 추가</span>
+      <button class="modal-close" onclick="closeMobCompose()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <input type="text" id="mob-en" placeholder="영어 표현" />
+        <input type="text" id="mob-ko" placeholder="한글 의미" />
+        <input type="text" id="mob-src" placeholder="출처" class="modal-full-row" />
+      </div>
+      <input type="file" id="mob-img" accept="image/*,.gif" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMobCompose()">취소</button>
+      <button class="btn-post" id="mob-btn-post">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수정 팝업 -->
 <div id="edit-modal">
   <div class="modal-box">
     <div class="modal-header">
@@ -83,6 +106,5 @@
 </div>
 
 <script type="module" src="js/app.js"></script>
-
 </body>
 </html>

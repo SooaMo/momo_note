@@ -11,46 +11,68 @@ import {
   getDateKey,
   esc
 } from "./posts.js";
-import { renderNav } from "./nav.js";
+import { renderNav, getNavFilter } from "./nav.js";
 
 let filter  = "all";
 let imgData = null;
 
 /* ══════════════════════════════
-   등록
+   등록 (데스크탑)
 ══════════════════════════════ */
-document.getElementById("inp-img").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) { imgData = null; return; }
-  const reader = new FileReader();
-  reader.onload = ev => { imgData = ev.target.result; };
-  reader.readAsDataURL(file);
+function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, onDone) {
+  document.getElementById(imgInputId).addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) { imgData = null; return; }
+    const reader = new FileReader();
+    reader.onload = ev => { imgData = ev.target.result; };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById(btnId).addEventListener("click", async () => {
+    const en  = document.getElementById(enInputId).value.trim();
+    const ko  = document.getElementById(koInputId).value.trim();
+    const src = document.getElementById(srcInputId).value.trim();
+    if (!en || !ko) { alert("영어 표현과 한글 의미는 필수입니다."); return; }
+
+    const btn = document.getElementById(btnId);
+    btn.textContent = "저장 중...";
+    btn.disabled = true;
+
+    await addPost(en, ko, src, imgData);
+
+    document.getElementById(enInputId).value  = "";
+    document.getElementById(koInputId).value  = "";
+    document.getElementById(srcInputId).value = "";
+    document.getElementById(imgInputId).value = "";
+    imgData = null;
+    btn.textContent = "등록";
+    btn.disabled = false;
+    if (onDone) onDone();
+    render();
+  });
+}
+
+setupCompose("inp-img", "inp-en", "inp-ko", "inp-src", "btn-post");
+
+/* ══════════════════════════════
+   모바일 FAB + 팝업
+══════════════════════════════ */
+setupCompose("mob-img", "mob-en", "mob-ko", "mob-src", "mob-btn-post", () => {
+  document.getElementById("mob-compose-modal").classList.remove("open");
 });
 
-document.getElementById("btn-post").addEventListener("click", async () => {
-  const en  = document.getElementById("inp-en").value.trim();
-  const ko  = document.getElementById("inp-ko").value.trim();
-  const src = document.getElementById("inp-src").value.trim();
-  if (!en || !ko) { alert("영어 표현과 한글 의미는 필수입니다."); return; }
-
-  const btn = document.getElementById("btn-post");
-  btn.textContent = "저장 중...";
-  btn.disabled = true;
-
-  await addPost(en, ko, src, imgData);
-
-  document.getElementById("inp-en").value  = "";
-  document.getElementById("inp-ko").value  = "";
-  document.getElementById("inp-src").value = "";
-  document.getElementById("inp-img").value = "";
-  imgData = null;
-  btn.textContent = "등록";
-  btn.disabled = false;
-  render();
+window.openMobCompose = () => {
+  document.getElementById("mob-compose-modal").classList.add("open");
+};
+window.closeMobCompose = () => {
+  document.getElementById("mob-compose-modal").classList.remove("open");
+};
+document.getElementById("mob-compose-modal").addEventListener("click", e => {
+  if (e.target === document.getElementById("mob-compose-modal")) closeMobCompose();
 });
 
 /* ══════════════════════════════
-   필터
+   필터 (알겠다/모르겠다/전체)
 ══════════════════════════════ */
 document.querySelectorAll(".filter-tab").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -65,28 +87,23 @@ document.querySelectorAll(".filter-tab").forEach(btn => {
 /* ══════════════════════════════
    수정 팝업
 ══════════════════════════════ */
-let editImgData = undefined; // undefined = 변경없음, null = 삭제, string = 새이미지
+let editImgData = undefined;
 
 window.openEditModal = (id) => {
   const { posts } = window.__state;
   const p = posts.find(x => x.id === id);
   if (!p) return;
-
   editImgData = undefined;
-
   document.getElementById("edit-id").value  = id;
   document.getElementById("edit-en").value  = p.en;
   document.getElementById("edit-ko").value  = p.ko;
   document.getElementById("edit-src").value = p.src || "";
-
-  // 현재 이미지 미리보기
   const preview = document.getElementById("edit-img-preview");
   if (p.img) {
     preview.innerHTML = `<img src="${p.img}" alt="현재 이미지" /><button type="button" onclick="removeEditImg()">이미지 삭제</button>`;
   } else {
     preview.innerHTML = "";
   }
-
   document.getElementById("edit-modal").classList.add("open");
 };
 
@@ -117,20 +134,16 @@ document.getElementById("btn-edit-save").addEventListener("click", async () => {
   const ko  = document.getElementById("edit-ko").value.trim();
   const src = document.getElementById("edit-src").value.trim();
   if (!en || !ko) { alert("영어 표현과 한글 의미는 필수입니다."); return; }
-
   const btn = document.getElementById("btn-edit-save");
   btn.textContent = "저장 중...";
   btn.disabled = true;
-
   await updatePost(id, { en, ko, src, img: editImgData });
-
   btn.textContent = "저장";
   btn.disabled = false;
   closeEditModal();
   render();
 });
 
-// 모달 바깥 클릭 시 닫기
 document.getElementById("edit-modal").addEventListener("click", e => {
   if (e.target === document.getElementById("edit-modal")) closeEditModal();
 });
@@ -144,11 +157,9 @@ window.submitComment = async (postId) => {
   const name   = nameEl.value.trim();
   const text   = textEl.value.trim();
   if (!name || !text) { alert("이름과 코멘트를 모두 입력해주세요."); return; }
-
   const btn = document.getElementById(`cmt-btn-${postId}`);
   btn.textContent = "저장 중...";
   btn.disabled = true;
-
   await addComment(postId, name, text);
   nameEl.value = "";
   textEl.value = "";
@@ -191,29 +202,46 @@ function renderComments(p) {
   `;
 }
 
+function applyNavFilter(posts) {
+  const nf = getNavFilter();
+  if (!nf) return posts;
+  return posts.filter(p => {
+    const { y, m, day } = getDateKey(p.ts);
+    if (nf.day) return y == nf.y && m == nf.m && day == nf.day;
+    if (nf.m)   return y == nf.y && m == nf.m;
+    return y == nf.y;
+  });
+}
+
 function renderTimeline(filteredPosts) {
   const timeline = document.getElementById("timeline");
+  // nav 날짜 필터 적용
+  const posts = applyNavFilter(filteredPosts);
 
-  if (!filteredPosts.length) {
-    timeline.innerHTML = '<div class="empty">등록된 표현이 없어요.<br>위에서 새 표현을 추가해보세요!</div>';
-    return;
-  }
-
+  // 오래된 것이 아래, 최신이 위 → 내림차순
+  const sorted = [...posts].sort((a, b) => b.ts > a.ts ? 1 : -1);
+  // 날짜 그룹도 최신 날짜가 위
   const groups = {};
-  filteredPosts.forEach(p => {
+  sorted.forEach(p => {
     const { y, m, day } = getDateKey(p.ts);
     const key = `${y}-${m}-${day}`;
     if (!groups[key]) groups[key] = { y, m, day, items: [] };
     groups[key].items.push(p);
   });
 
-  let html = "";
+  if (!Object.keys(groups).length) {
+    timeline.innerHTML = '<div class="empty">등록된 표현이 없어요.</div>';
+    return;
+  }
 
-  Object.keys(groups).sort((a, b) => (b > a ? 1 : -1)).forEach(key => {
+  let html = "";
+  // 날짜 그룹: 최신 날짜 먼저
+  Object.keys(groups).sort((a, b) => b > a ? 1 : -1).forEach(key => {
     const g     = groups[key];
     const label = `${g.y}년 ${g.m}월 ${String(g.day).padStart(2, "0")}일`;
     html += `<div class="date-anchor" id="anchor-${key}">${label}</div>`;
 
+    // 날짜 내에서도 최신이 위
     g.items.forEach(p => {
       const knownCls   = p.status === "known"   ? "known-active"   : "";
       const unknownCls = p.status === "unknown" ? "unknown-active" : "";
@@ -236,7 +264,7 @@ function renderTimeline(filteredPosts) {
             <span class="card-time">${fmtTs(p.ts)}</span>
             <div class="card-actions-right">
               <button class="edit-btn" onclick="openEditModal(${p.id})">✎ <span class="btn-text">수정</span></button>
-              <button class="del-btn"  onclick="handleDelete(${p.id})">🗑 <span class="btn-text">삭제</span></button>
+              <button class="del-btn"  onclick="handleDelete(${p.id})">✕ <span class="btn-text">삭제</span></button>
             </div>
           </div>
           ${renderComments(p)}
@@ -266,10 +294,12 @@ window.handleToggle = async (id, status) => {
    전체 렌더
 ══════════════════════════════ */
 function render() {
-  const filtered = getFilteredPosts(filter);
-  renderNav(filtered);
-  renderTimeline(filtered);
+  const allFiltered = getFilteredPosts(filter);
+  renderNav(allFiltered);          // nav는 항상 전체 포스트 기준
+  renderTimeline(allFiltered);     // timeline은 nav필터 추가 적용
 }
+
+window.__renderApp = render;
 
 /* ══════════════════════════════
    앱 시작
