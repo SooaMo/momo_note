@@ -219,12 +219,13 @@ function renderTimeline(filteredPosts) {
   const posts = applyNavFilter(filteredPosts);
 
   // 오래된 것이 아래, 최신이 위 → 내림차순
-  const sorted = [...posts].sort((a, b) => b.ts > a.ts ? 1 : -1);
-  // 날짜 그룹도 최신 날짜가 위
+  // ts 기준 내림차순 (최신이 위)
+  const sorted = [...posts].sort((a, b) => new Date(b.ts) - new Date(a.ts));
   const groups = {};
   sorted.forEach(p => {
     const { y, m, day } = getDateKey(p.ts);
-    const key = `${y}-${m}-${day}`;
+    // zero-padded key: "2026-05-11" 형식 → 문자열 정렬도 올바름
+    const key = `${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     if (!groups[key]) groups[key] = { y, m, day, items: [] };
     groups[key].items.push(p);
   });
@@ -235,7 +236,7 @@ function renderTimeline(filteredPosts) {
   }
 
   let html = "";
-  // 날짜 그룹: 최신 날짜 먼저
+  // 날짜 그룹: 내림차순 문자열 정렬 (zero-padded라서 정확)
   Object.keys(groups).sort((a, b) => b > a ? 1 : -1).forEach(key => {
     const g     = groups[key];
     const label = `${g.y}년 ${g.m}월 ${String(g.day).padStart(2, "0")}일`;

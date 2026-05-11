@@ -77,11 +77,20 @@ window.toggleNav = toggleNav;
 
 window.setNavFilter = (f) => {
   navFilter = f;
+  if (window.__renderApp) window.__renderApp();
+
+  // 특정 날짜 선택 시 해당 anchor로 스크롤
+  if (f && f.day) {
+    setTimeout(() => {
+      const key = `${f.y}-${String(f.m).padStart(2,"0")}-${String(f.day).padStart(2,"0")}`;
+      const el = document.getElementById("anchor-" + key);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   // 모바일에서 선택 후 사이드바 닫기
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebar-overlay").classList.remove("open");
   }
-  // app.js의 render 호출
-  if (window.__renderApp) window.__renderApp();
 };
