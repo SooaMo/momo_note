@@ -1100,3 +1100,101 @@ input[type="file"] {
   gap: 6px;
   margin-top: 4px;
 }
+
+/* ══════════════════════════════
+   코멘트 수정 버튼
+══════════════════════════════ */
+.comment-edit-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #ccc;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.comment-edit-btn:hover {
+  color: #D4621A;
+  background: #FDE8D8;
+}
+
+/* ── 인라인 수정 폼 ── */
+.inline-edit-form {
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.inline-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-cancel-sm {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+}
+
+.btn-cancel-sm:hover {
+  background: #f5f5f5;
+}
+
+/* ── 수정됨 뱃지 ── */
+.edited-badge {
+  font-size: 10px;
+  color: #bbb;
+  font-style: italic;
+  margin-left: 4px;
+}
+
+/* ══════════════════════════════
+   코멘트 헤더 - 수정버튼 시간 옆으로
+══════════════════════════════ */
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.comment-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-right: 4px;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #bbb;
+  /* flex:1 제거 - 수정버튼이 바로 옆에 오도록 */
+  flex: none;
+}
+
+/* 수정버튼과 삭제버튼을 오른쪽 끝으로 밀기 */
+.comment-header .comment-edit-btn:first-of-type {
+  margin-left: 2px;
+}
+
+.comment-header .comment-del {
+  margin-left: auto;
+}
+
+/* ══════════════════════════════
+   코멘트 액션 - 답글 왼쪽 / 하트 오른쪽
+══════════════════════════════ */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}

@@ -63,6 +63,16 @@ export async function deleteComment(postId, cid) {
   await Storage.saveOne(post);
 }
 
+export async function editComment(postId, cid, text) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const c = (post.comments || []).find(c => c.cid === cid);
+  if (!c) return;
+  c.text    = text.trim();
+  c.edited  = true;
+  await Storage.saveOne(post);
+}
+
 export async function heartComment(postId, cid) {
   const post = posts.find(p => p.id === postId);
   if (!post) return;
@@ -93,6 +103,18 @@ export async function deleteReply(postId, cid, rid) {
   const c = (post.comments || []).find(c => c.cid === cid);
   if (!c) return;
   c.replies = (c.replies || []).filter(r => r.rid !== rid);
+  await Storage.saveOne(post);
+}
+
+export async function editReply(postId, cid, rid, text) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const c = (post.comments || []).find(c => c.cid === cid);
+  if (!c) return;
+  const r = (c.replies || []).find(r => r.rid === rid);
+  if (!r) return;
+  r.text   = text.trim();
+  r.edited = true;
   await Storage.saveOne(post);
 }
 

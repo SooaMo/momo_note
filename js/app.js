@@ -6,9 +6,11 @@ import {
   toggleStatus,
   addComment,
   deleteComment,
+  editComment,
   heartComment,
   addReply,
   deleteReply,
+  editReply,
   getFilteredPosts,
   fmtTs,
   getDateKey,
@@ -237,19 +239,77 @@ window.handleDeleteReply = async (postId, cid, rid) => {
   render();
 };
 
+/* ── 코멘트 인라인 수정 ── */
+window.toggleEditComment = (postId, cid, currentText) => {
+  const form    = document.getElementById(`edit-comment-form-${cid}`);
+  const input   = document.getElementById(`edit-comment-input-${cid}`);
+  const textDiv = document.getElementById(`comment-text-${cid}`);
+  if (!form) return;
+  const isOpen = form.style.display !== "none";
+  form.style.display    = isOpen ? "none"  : "flex";
+  textDiv.style.display = isOpen ? "block" : "none";
+  if (!isOpen) { input.value = currentText; input.focus(); }
+};
+
+window.cancelEditComment = (cid) => {
+  document.getElementById(`edit-comment-form-${cid}`).style.display = "none";
+  document.getElementById(`comment-text-${cid}`).style.display = "block";
+};
+
+window.submitEditComment = async (postId, cid) => {
+  const input = document.getElementById(`edit-comment-input-${cid}`);
+  const text  = input.value.trim();
+  if (!text) { alert("내용을 입력해주세요."); return; }
+  await editComment(postId, cid, text);
+  render();
+};
+
+/* ── 답글 인라인 수정 ── */
+window.toggleEditReply = (postId, cid, rid, currentText) => {
+  const form    = document.getElementById(`edit-reply-form-${rid}`);
+  const input   = document.getElementById(`edit-reply-input-${rid}`);
+  const textDiv = document.getElementById(`reply-text-${rid}`);
+  if (!form) return;
+  const isOpen = form.style.display !== "none";
+  form.style.display    = isOpen ? "none"  : "flex";
+  textDiv.style.display = isOpen ? "block" : "none";
+  if (!isOpen) { input.value = currentText; input.focus(); }
+};
+
+window.cancelEditReply = (rid) => {
+  document.getElementById(`edit-reply-form-${rid}`).style.display = "none";
+  document.getElementById(`reply-text-${rid}`).style.display = "block";
+};
+
+window.submitEditReply = async (postId, cid, rid) => {
+  const input = document.getElementById(`edit-reply-input-${rid}`);
+  const text  = input.value.trim();
+  if (!text) { alert("내용을 입력해주세요."); return; }
+  await editReply(postId, cid, rid, text);
+  render();
+};
+
 /* ══════════════════════════════
    타임라인 렌더
 ══════════════════════════════ */
 function renderReplies(p, c) {
   const replies = c.replies || [];
   const items = replies.map(r => `
-    <div class="reply-item">
+    <div class="reply-item" id="reply-${r.rid}">
       <div class="comment-header">
         <span class="comment-name">${esc(r.name)}</span>
-        <span class="comment-time">${fmtTs(r.ts)}</span>
+        <span class="comment-time">${fmtTs(r.ts)}${r.edited ? ' <span class="edited-badge">수정됨</span>' : ''}</span>
+        <button class="comment-edit-btn" onclick="toggleEditReply(${p.id}, ${c.cid}, ${r.rid}, \`${esc(r.text)}\`)">✎</button>
         <button class="comment-del" onclick="handleDeleteReply(${p.id}, ${c.cid}, ${r.rid})">✕</button>
       </div>
-      <div class="comment-text">${esc(r.text)}</div>
+      <div class="comment-text" id="reply-text-${r.rid}">${esc(r.text)}</div>
+      <div class="inline-edit-form" id="edit-reply-form-${r.rid}" style="display:none">
+        <textarea class="cmt-text-input" id="edit-reply-input-${r.rid}"></textarea>
+        <div class="inline-edit-actions">
+          <button class="btn-cancel-sm" onclick="cancelEditReply(${r.rid})">취소</button>
+          <button class="cmt-submit-btn" onclick="submitEditReply(${p.id}, ${c.cid}, ${r.rid})">저장</button>
+        </div>
+      </div>
     </div>
   `).join("");
 
@@ -268,18 +328,26 @@ function renderReplies(p, c) {
 function renderComments(p) {
   const comments = p.comments || [];
   const items = comments.map(c => `
-    <div class="comment-item">
+    <div class="comment-item" id="comment-${c.cid}">
       <div class="comment-header">
         <span class="comment-name">${esc(c.name)}</span>
-        <span class="comment-time">${fmtTs(c.ts)}</span>
+        <span class="comment-time">${fmtTs(c.ts)}${c.edited ? ' <span class="edited-badge">수정됨</span>' : ''}</span>
+        <button class="comment-edit-btn" onclick="toggleEditComment(${p.id}, ${c.cid}, \`${esc(c.text)}\`)">✎</button>
         <button class="comment-del" onclick="handleDeleteComment(${p.id}, ${c.cid})">✕</button>
       </div>
-      <div class="comment-text">${esc(c.text)}</div>
+      <div class="comment-text" id="comment-text-${c.cid}">${esc(c.text)}</div>
+      <div class="inline-edit-form" id="edit-comment-form-${c.cid}" style="display:none">
+        <textarea class="cmt-text-input" id="edit-comment-input-${c.cid}"></textarea>
+        <div class="inline-edit-actions">
+          <button class="btn-cancel-sm" onclick="cancelEditComment(${c.cid})">취소</button>
+          <button class="cmt-submit-btn" onclick="submitEditComment(${p.id}, ${c.cid})">저장</button>
+        </div>
+      </div>
       <div class="comment-actions">
+        <button class="reply-toggle-btn" onclick="toggleReplyForm(${c.cid})">↩ 답글</button>
         <button class="heart-btn" onclick="handleHeart(${p.id}, ${c.cid})">
           ❤️ <span class="heart-count">${c.hearts || 0}</span>
         </button>
-        <button class="reply-toggle-btn" onclick="toggleReplyForm(${c.cid})">↩ 답글</button>
       </div>
       ${renderReplies(p, c)}
     </div>
