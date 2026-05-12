@@ -6,6 +6,9 @@ import {
   toggleStatus,
   addComment,
   deleteComment,
+  heartComment,
+  addReply,
+  deleteReply,
   getFilteredPosts,
   fmtTs,
   getDateKey,
@@ -207,9 +210,61 @@ window.handleDeleteComment = async (postId, cid) => {
   render();
 };
 
+window.handleHeart = async (postId, cid) => {
+  await heartComment(postId, cid);
+  render();
+};
+
+window.toggleReplyForm = (cid) => {
+  const form = document.getElementById(`reply-form-${cid}`);
+  if (!form) return;
+  form.style.display = form.style.display === "none" ? "flex" : "none";
+};
+
+window.submitReply = async (postId, cid) => {
+  const nameEl = document.getElementById(`rpl-name-${cid}`);
+  const textEl = document.getElementById(`rpl-text-${cid}`);
+  const name   = nameEl.value.trim();
+  const text   = textEl.value.trim();
+  if (!name || !text) { alert("이름과 답글을 모두 입력해주세요."); return; }
+  await addReply(postId, cid, name, text);
+  render();
+};
+
+window.handleDeleteReply = async (postId, cid, rid) => {
+  if (!confirm("답글을 삭제할까요?")) return;
+  await deleteReply(postId, cid, rid);
+  render();
+};
+
 /* ══════════════════════════════
    타임라인 렌더
 ══════════════════════════════ */
+function renderReplies(p, c) {
+  const replies = c.replies || [];
+  const items = replies.map(r => `
+    <div class="reply-item">
+      <div class="comment-header">
+        <span class="comment-name">${esc(r.name)}</span>
+        <span class="comment-time">${fmtTs(r.ts)}</span>
+        <button class="comment-del" onclick="handleDeleteReply(${p.id}, ${c.cid}, ${r.rid})">✕</button>
+      </div>
+      <div class="comment-text">${esc(r.text)}</div>
+    </div>
+  `).join("");
+
+  return `
+    <div class="replies-wrap">
+      ${items}
+      <div class="reply-form" id="reply-form-${c.cid}" style="display:none">
+        <input type="text" id="rpl-name-${c.cid}" placeholder="이름" class="cmt-name-input" />
+        <textarea id="rpl-text-${c.cid}" placeholder="답글을 입력하세요…" class="cmt-text-input"></textarea>
+        <button class="cmt-submit-btn" onclick="submitReply(${p.id}, ${c.cid})">등록</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderComments(p) {
   const comments = p.comments || [];
   const items = comments.map(c => `
@@ -220,6 +275,13 @@ function renderComments(p) {
         <button class="comment-del" onclick="handleDeleteComment(${p.id}, ${c.cid})">✕</button>
       </div>
       <div class="comment-text">${esc(c.text)}</div>
+      <div class="comment-actions">
+        <button class="heart-btn" onclick="handleHeart(${p.id}, ${c.cid})">
+          ❤️ <span class="heart-count">${c.hearts || 0}</span>
+        </button>
+        <button class="reply-toggle-btn" onclick="toggleReplyForm(${c.cid})">↩ 답글</button>
+      </div>
+      ${renderReplies(p, c)}
     </div>
   `).join("");
 

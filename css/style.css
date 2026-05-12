@@ -1010,3 +1010,93 @@ input[type="file"] {
   color: #D4621A;
   font-weight: 600;
 }
+
+/* ══════════════════════════════
+   모바일 팝업 1열 그리드
+══════════════════════════════ */
+.modal-grid-single {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-grid-single input[type="text"],
+.modal-grid-single input[type="file"] {
+  width: 100%;
+}
+
+/* ══════════════════════════════
+   코멘트 하트 + 답글 버튼
+══════════════════════════════ */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.heart-btn {
+  background: none;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+  color: #888;
+}
+
+.heart-btn:hover {
+  background: #fff0f0;
+  border-color: #ffb3b3;
+}
+
+.heart-count {
+  font-size: 12px;
+  color: #888;
+}
+
+.reply-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.reply-toggle-btn:hover {
+  color: #D4621A;
+  background: #FDE8D8;
+}
+
+/* ══════════════════════════════
+   답글
+══════════════════════════════ */
+.replies-wrap {
+  margin-top: 8px;
+  margin-left: 16px;
+  border-left: 2px solid #f0ede6;
+  padding-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reply-item {
+  background: #faf9f7;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}

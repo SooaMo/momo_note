@@ -68,12 +68,12 @@
       <button class="modal-close" onclick="closeMobCompose()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="modal-grid">
+      <div class="modal-grid-single">
         <input type="text" id="mob-en" placeholder="영어 표현" />
         <input type="text" id="mob-ko" placeholder="설명" />
-        <input type="text" id="mob-src" placeholder="출처" class="modal-full-row" />
+        <input type="text" id="mob-src" placeholder="출처" />
+        <input type="file" id="mob-img" accept="image/*,.gif" />
       </div>
-      <input type="file" id="mob-img" accept="image/*,.gif" />
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeMobCompose()">취소</button>

@@ -46,10 +46,12 @@ export async function addComment(postId, name, text) {
   if (!post) return;
   if (!post.comments) post.comments = [];
   post.comments.push({
-    cid:  Date.now(),
-    name: name.trim(),
-    text: text.trim(),
-    ts:   new Date().toISOString()
+    cid:     Date.now(),
+    name:    name.trim(),
+    text:    text.trim(),
+    ts:      new Date().toISOString(),
+    hearts:  0,
+    replies: []
   });
   await Storage.saveOne(post);
 }
@@ -58,6 +60,39 @@ export async function deleteComment(postId, cid) {
   const post = posts.find(p => p.id === postId);
   if (!post) return;
   post.comments = (post.comments || []).filter(c => c.cid !== cid);
+  await Storage.saveOne(post);
+}
+
+export async function heartComment(postId, cid) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const c = (post.comments || []).find(c => c.cid === cid);
+  if (!c) return;
+  c.hearts = (c.hearts || 0) + 1;
+  await Storage.saveOne(post);
+}
+
+export async function addReply(postId, cid, name, text) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const c = (post.comments || []).find(c => c.cid === cid);
+  if (!c) return;
+  if (!c.replies) c.replies = [];
+  c.replies.push({
+    rid:  Date.now(),
+    name: name.trim(),
+    text: text.trim(),
+    ts:   new Date().toISOString()
+  });
+  await Storage.saveOne(post);
+}
+
+export async function deleteReply(postId, cid, rid) {
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const c = (post.comments || []).find(c => c.cid === cid);
+  if (!c) return;
+  c.replies = (c.replies || []).filter(r => r.rid !== rid);
   await Storage.saveOne(post);
 }
 
