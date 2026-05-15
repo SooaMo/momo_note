@@ -339,7 +339,7 @@ input[type="file"] {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 8px 16px;
-  border-top: 1px solid #f0ede6;
+  border-bottom: 1px solid #f0ede6;
   background: #faf9f7;
   gap: 8px;
 }

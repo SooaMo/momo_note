@@ -414,12 +414,6 @@ function renderTimeline(filteredPosts) {
 
       html += `
         <div class="card ${cardCls}" id="card-${p.id}">
-          ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
-          <div class="card-body">
-            <div class="card-en">${esc(p.en)}</div>
-            <div class="card-ko">${esc(p.ko)}</div>
-            ${p.src ? `<div class="card-source">📌 ${esc(p.src)}</div>` : ""}
-          </div>
           <div class="card-footer">
             <div class="card-actions-left">
               <button class="toggle-btn ${knownCls}"   onclick="handleToggle(${p.id}, 'known')">✓ <span class="btn-text">알겠다</span></button>
@@ -430,6 +424,12 @@ function renderTimeline(filteredPosts) {
               <button class="edit-btn" onclick="openEditModal(${p.id})">✎ <span class="btn-text">수정</span></button>
               <button class="del-btn"  onclick="handleDelete(${p.id})">✕ <span class="btn-text">삭제</span></button>
             </div>
+          </div>
+          ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
+          <div class="card-body">
+            <div class="card-en">${esc(p.en)}</div>
+            <div class="card-ko">${esc(p.ko)}</div>
+            ${p.src ? `<div class="card-source">📌 ${esc(p.src)}</div>` : ""}
           </div>
           ${renderComments(p)}
         </div>
