@@ -384,13 +384,24 @@ function renderTimeline(filteredPosts) {
   // 오래된 것이 아래, 최신이 위 → 내림차순
   // ts 기준 내림차순 (최신이 위)
   const sorted = [...posts].sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+  // 날짜별 그룹 먼저 만들기
   const groups = {};
   sorted.forEach(p => {
     const { y, m, day } = getDateKey(p.ts);
-    // zero-padded key: "2026-05-11" 형식 → 문자열 정렬도 올바름
     const key = `${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     if (!groups[key]) groups[key] = { y, m, day, items: [] };
     groups[key].items.push(p);
+  });
+
+  // 번호: 날짜별로 오래된 것이 1번
+  // groups 안의 items는 최신순 → 역순으로 번호 부여
+  const numberMap = {};
+  Object.values(groups).forEach(g => {
+    const dayTotal = g.items.length;
+    g.items.forEach((p, i) => {
+      numberMap[p.id] = dayTotal - i; // 오래된 것 = 1번
+    });
   });
 
   if (!Object.keys(groups).length) {
@@ -425,7 +436,10 @@ function renderTimeline(filteredPosts) {
               <button class="del-btn"  onclick="handleDelete(${p.id})">✕ <span class="btn-text">삭제</span></button>
             </div>
           </div>
-          ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
+          <div class="card-media-wrap">
+            ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
+            <span class="card-number">${numberMap[p.id]}</span>
+          </div>
           <div class="card-body">
             <div class="card-en">${esc(p.en)}</div>
             <div class="card-ko">${esc(p.ko)}</div>
