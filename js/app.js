@@ -437,8 +437,10 @@ function renderTimeline(filteredPosts) {
             </div>
           </div>
           <div class="card-media-wrap">
+            <div class="card-number-row">
+              <span class="card-number">${numberMap[p.id]}</span>
+            </div>
             ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
-            <span class="card-number">${numberMap[p.id]}</span>
           </div>
           <div class="card-body">
             <div class="card-en">${esc(p.en)}</div>

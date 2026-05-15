@@ -1203,31 +1203,29 @@ input[type="file"] {
    포스트 번호 뱃지
 ══════════════════════════════ */
 .card-media-wrap {
-  position: relative;
+  width: 100%;
+}
+
+/* 번호 행: 카드 중앙 정렬, 이미지 바로 위 */
+.card-number-row {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
 }
 
 .card-number {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
+  background: transparent;
+  border: 1.5px solid #aaa;
+  color: #aaa;
   font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
   line-height: 1;
   pointer-events: none;
-}
-
-/* 이미지 없을 때는 card-body 위에 뱃지 위치 */
-.card-media-wrap:not(:has(.card-img-wrap)) .card-number {
-  top: 6px;
-  left: 6px;
-  background: #D4621A;
+  flex-shrink: 0;
 }
