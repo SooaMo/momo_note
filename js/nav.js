@@ -1,29 +1,34 @@
 import { getDateKey } from "./posts.js";
 
-// 현재 선택된 nav 필터 (null = 전체, {y} = 연도, {y,m} = 월, {y,m,day} = 일)
 let navFilter = null;
+let _calData = {};
 
 export function getNavFilter() { return navFilter; }
 
 export function renderNav(filteredPosts) {
   const tree = {};
+  const countMap = {};
 
   filteredPosts.forEach(p => {
     const { y, m, day } = getDateKey(p.ts);
     if (!tree[y])    tree[y] = {};
     if (!tree[y][m]) tree[y][m] = new Set();
     tree[y][m].add(day);
+    const key = `${y}-${m}-${day}`;
+    countMap[key] = (countMap[key] || 0) + 1;
   });
+
+  _calData = countMap;
 
   let html = "";
 
-  // 전체보기 버튼
   const allActive = navFilter === null ? "nav-active" : "";
-  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null)">전체보기</div>`;
+  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">전체보기</div>`;
 
   Object.keys(tree).sort((a, b) => b - a).forEach(y => {
     const yKey    = `y${y}`;
     const yActive = navFilter && navFilter.y == y && !navFilter.m ? "nav-active" : "";
+
     html += `
       <div class="nav-year">
         <div class="nav-year-label ${yActive}" onclick="setNavFilter({y:${y}})">
@@ -40,7 +45,7 @@ export function renderNav(filteredPosts) {
 
       html += `
         <div class="nav-month">
-          <div class="nav-month-label ${mActive}" onclick="setNavFilter({y:${y},m:${m}})">
+          <div class="nav-month-label ${mActive}" onclick="openMiniCal(${y},${m},event)">
             <span class="nav-toggle open" id="tog-${mKey}" onclick="event.stopPropagation();toggleNav('${mKey}')">▶</span>
             ${mName}
           </div>
@@ -49,7 +54,10 @@ export function renderNav(filteredPosts) {
 
       [...tree[y][m]].sort((a, b) => b - a).forEach(day => {
         const dActive = navFilter && navFilter.y == y && navFilter.m == m && navFilter.day == day ? "nav-active" : "";
-        html += `<div class="nav-day ${dActive}" onclick="setNavFilter({y:${y},m:${m},day:${day}})">${String(day).padStart(2, "0")}일</div>`;
+        const cnt = countMap[`${y}-${m}-${day}`] || 0;
+        html += `<div class="nav-day ${dActive}" onclick="setNavFilter({y:${y},m:${m},day:${day}})">
+          ${String(day).padStart(2, "0")}일 (${cnt})
+        </div>`;
       });
 
       html += `</div></div>`;
@@ -62,14 +70,12 @@ export function renderNav(filteredPosts) {
     html = '<div style="padding:8px 12px;font-size:12px;color:#bbb">항목 없음</div>';
   }
 
-  // 언어 전환 버튼
+  document.getElementById("nav-tree").innerHTML = html;
+
+  // 언어 switcher
   const currentPage = window.location.pathname;
   const isEng = !currentPage.includes("french");
   const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
-
-  document.getElementById("nav-tree").innerHTML = html;
-
-  // 언어 switcher는 nav-tree 아래 별도 영역에
   const switcher = document.getElementById("lang-switcher");
   if (switcher) {
     switcher.innerHTML = `
@@ -86,23 +92,92 @@ export function toggleNav(key) {
   ch.classList.toggle("open");
   tog.classList.toggle("open");
 }
-
 window.toggleNav = toggleNav;
 
+/* ── 미니 달력 ── */
+window.openMiniCal = (y, m, event) => {
+  event.stopPropagation();
+
+  const existing = document.getElementById("mini-cal-popup");
+  if (existing) { existing.remove(); return; }
+
+  const popup = document.createElement("div");
+  popup.id = "mini-cal-popup";
+  popup.className = "mini-cal-popup";
+
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstDay    = new Date(y, m - 1, 1).getDay();
+  const mName = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"][m - 1];
+
+  let grid = `
+    <div class="mini-cal-header">
+      <span>${y}년 ${mName}</span>
+      <button onclick="document.getElementById('mini-cal-popup').remove()">✕</button>
+    </div>
+    <div class="mini-cal-grid">
+      <div class="mini-cal-dow">일</div><div class="mini-cal-dow">월</div>
+      <div class="mini-cal-dow">화</div><div class="mini-cal-dow">수</div>
+      <div class="mini-cal-dow">목</div><div class="mini-cal-dow">금</div>
+      <div class="mini-cal-dow">토</div>
+  `;
+
+  for (let i = 0; i < firstDay; i++) grid += `<div></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key    = `${y}-${m}-${d}`;
+    const cnt    = _calData[key] || 0;
+    const hasPost = cnt > 0;
+    const clickFn = hasPost
+      ? `setNavFilter({y:${y},m:${m},day:${d}});document.getElementById('mini-cal-popup').remove()`
+      : "";
+    grid += `<div class="mini-cal-day ${hasPost ? "has-post" : ""}" onclick="${clickFn}">
+      <span class="mini-cal-d">${d}</span>
+      ${hasPost ? `<span class="mini-cal-cnt">${cnt}</span>` : ""}
+    </div>`;
+  }
+
+  grid += `</div>`;
+  popup.innerHTML = grid;
+
+  // 월 label 오른쪽에 fixed 위치
+  const rect = event.currentTarget.getBoundingClientRect();
+  popup.style.top  = rect.top + "px";
+  popup.style.left = (rect.right + 8) + "px";
+
+  // 화면 오른쪽 밖으로 나가면 왼쪽으로
+  document.body.appendChild(popup);
+  const popRect = popup.getBoundingClientRect();
+  if (popRect.right > window.innerWidth - 8) {
+    popup.style.left = (rect.left - popRect.width - 8) + "px";
+  }
+  // 화면 아래로 넘치면 위로 올리기
+  if (popRect.bottom > window.innerHeight - 8) {
+    popup.style.top = (window.innerHeight - popRect.height - 8) + "px";
+  }
+
+  setTimeout(() => {
+    document.addEventListener("click", function handler(e) {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener("click", handler);
+      }
+    });
+  }, 0);
+};
+
+/* ── nav 필터 ── */
 window.setNavFilter = (f) => {
   navFilter = f;
   if (window.__renderApp) window.__renderApp();
 
-  // 특정 날짜 선택 시 해당 anchor로 스크롤
   if (f && f.day) {
     setTimeout(() => {
       const key = `${f.y}-${String(f.m).padStart(2,"0")}-${String(f.day).padStart(2,"0")}`;
-      const el = document.getElementById("anchor-" + key);
+      const el  = document.getElementById("anchor-" + key);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   }
 
-  // 모바일에서 선택 후 사이드바 닫기
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebar-overlay").classList.remove("open");

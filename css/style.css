@@ -1229,3 +1229,273 @@ input[type="file"] {
   pointer-events: none;
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════
+   compose textarea (영어표현/설명)
+══════════════════════════════ */
+.compose-textarea {
+  padding: 7px 10px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f7;
+  color: #1a1a1a;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+  min-height: 36px;
+  max-height: 120px;
+  overflow-y: auto;
+  width: 100%;
+  transition: border-color 0.15s;
+  field-sizing: content; /* 내용에 따라 자동 높이 (지원 브라우저) */
+}
+
+.compose-textarea:focus {
+  border-color: #D4621A;
+  background: #fff;
+}
+
+/* ══════════════════════════════
+   nav 날짜별 포스팅 수 뱃지
+══════════════════════════════ */
+.nav-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-count {
+  font-size: 10px;
+  color: #bbb;
+  background: #e8e5de;
+  border-radius: 8px;
+  padding: 1px 6px;
+  margin-right: 8px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.nav-day.nav-active .nav-count {
+  background: #FDE8D8;
+  color: #D4621A;
+}
+
+/* ══════════════════════════════
+   출처 자동완성 드롭다운
+══════════════════════════════ */
+
+
+.compose-grid .img-input {
+  grid-column: 2;  /* 오른쪽 칸 */
+}
+
+.src-dropdown {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 500;
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.src-dropdown-item {
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.src-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.src-dropdown-item:hover {
+  background: #FEF3EB;
+  color: #D4621A;
+}
+
+.src-dropdown-item strong {
+  color: #D4621A;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════
+   미니 달력 팝업
+══════════════════════════════ */
+.mini-cal-popup {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #e0ddd6;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  z-index: 300;
+  padding: 10px;
+  width: 220px;
+}
+
+.mini-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0ede6;
+}
+
+.mini-cal-header button {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.mini-cal-header button:hover {
+  color: #555;
+  background: #f5f5f5;
+}
+
+.mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mini-cal-dow {
+  font-size: 10px;
+  color: #bbb;
+  text-align: center;
+  padding: 2px 0 4px;
+  font-weight: 500;
+}
+
+.mini-cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 1px;
+  border-radius: 6px;
+  cursor: default;
+  min-height: 30px;
+  justify-content: center;
+}
+
+.mini-cal-day.has-post {
+  cursor: pointer;
+  background: #FEF3EB;
+}
+
+.mini-cal-day.has-post:hover {
+  background: #FDE8D8;
+}
+
+.mini-cal-d {
+  font-size: 11px;
+  color: #555;
+  line-height: 1;
+}
+
+.mini-cal-day.has-post .mini-cal-d {
+  color: #D4621A;
+  font-weight: 600;
+}
+
+.mini-cal-cnt {
+  font-size: 9px;
+  color: #5a8fc2;
+  background: #e8f0f9;
+  border-radius: 6px;
+  padding: 0 3px;
+  margin-top: 2px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* nav-count 제거 (이제 (n) 텍스트로 대체) */
+.nav-count { display: none; }
+
+/* ══════════════════════════════
+   ↑ 탑 버튼
+══════════════════════════════ */
+#scroll-top-btn {
+  display: none;
+  position: fixed;
+  bottom: 28px;
+  right: 88px; /* FAB 왼쪽에 배치 */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: #D4621A;
+  font-size: 18px;
+  font-weight: 700;
+  border: 1.5px solid #F5B98A;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  cursor: pointer;
+  z-index: 89;
+  transition: all 0.15s;
+  align-items: center;
+  justify-content: center;
+}
+
+#scroll-top-btn:hover {
+  background: #FDE8D8;
+  transform: translateY(-2px);
+}
+
+#scroll-top-btn.visible {
+  display: flex;
+}
+
+/* 데스크탑: FAB 없으니 오른쪽 하단 */
+@media (min-width: 769px) {
+  #scroll-top-btn {
+    right: 28px;
+    bottom: 28px;
+  }
+}
+
+/* ══════════════════════════════
+   모바일 헤더 MomoNote 로고
+══════════════════════════════ */
+#header-logo {
+  display: none; /* 데스크탑에서 숨김 */
+}
+
+@media (max-width: 768px) {
+  #timeline-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+  }
+
+  #header-logo {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #D4621A;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    padding: 0 8px;
+  }
+
+  #header-logo:active {
+    opacity: 0.7;
+  }
+
+  .filter-tabs {
+    justify-content: flex-end;
+  }
+}

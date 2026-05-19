@@ -30,10 +30,11 @@
       <!-- 등록 영역 (데스크탑) -->
       <div id="compose">
         <div class="compose-grid">
-          <input type="text" id="inp-en"  placeholder="영어 표현 (예: break a leg)" />
-          <input type="text" id="inp-ko"  placeholder="설명 (예: 행운을 빌어)" />
-          <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" />
-          <input type="file" id="inp-img" accept="image/*,.gif" class="img-input" />
+          <textarea id="inp-en" placeholder="영어 표현 (예: break a leg)" class="compose-textarea"></textarea>
+          <textarea id="inp-ko" placeholder="설명 (예: 행운을 빌어)" class="compose-textarea"></textarea>
+          <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" autocomplete="off" />
+        <div class="src-dropdown" id="src-dropdown-main" style="display:none"></div>
+          <input type="file" id="inp-img" accept="image/*" class="img-input" />
         </div>
         <div class="compose-bottom">
           <button class="btn-post" id="btn-post">등록</button>
@@ -43,6 +44,7 @@
       <!-- 타임라인 헤더 (필터 고정) -->
       <div id="timeline-header">
         <button id="nav-toggle-btn" onclick="openSidebar()">☰ 목차</button>
+        <span id="header-logo" onclick="setNavFilter(null);scrollToTop()">MomoNote</span>
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="all">전체</button>
           <button class="filter-tab" data-filter="unknown">모르는 것만</button>
@@ -69,10 +71,13 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid-single">
-        <input type="text" id="mob-en" placeholder="영어 표현" />
-        <input type="text" id="mob-ko" placeholder="설명" />
-        <input type="text" id="mob-src" placeholder="출처" />
-        <input type="file" id="mob-img" accept="image/*,.gif" />
+        <textarea id="mob-en" placeholder="영어 표현" class="compose-textarea"></textarea>
+        <textarea id="mob-ko" placeholder="설명" class="compose-textarea"></textarea>
+        <div class="src-autocomplete-wrap">
+          <input type="text" id="mob-src" placeholder="출처" autocomplete="off" />
+          <div class="src-dropdown" id="src-dropdown-mob" style="display:none"></div>
+        </div>
+        <input type="file" id="mob-img" accept="image/*" />
       </div>
     </div>
     <div class="modal-footer">
@@ -92,12 +97,12 @@
     <input type="hidden" id="edit-id" />
     <div class="modal-body">
       <div class="modal-grid">
-        <input type="text" id="edit-en"  placeholder="영어 표현" />
-        <input type="text" id="edit-ko"  placeholder="설명" />
+        <textarea id="edit-en" placeholder="영어 표현" class="compose-textarea"></textarea>
+        <textarea id="edit-ko" placeholder="설명" class="compose-textarea"></textarea>
         <input type="text" id="edit-src" placeholder="출처" class="modal-full-row" />
       </div>
       <div id="edit-img-preview" class="edit-img-preview"></div>
-      <input type="file" id="edit-img" accept="image/*,.gif" />
+      <input type="file" id="edit-img" accept="image/*" />
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeEditModal()">취소</button>

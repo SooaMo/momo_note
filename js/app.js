@@ -21,6 +21,15 @@ import { renderNav, getNavFilter } from "./nav.js";
 let filter  = "all";
 let imgData = null;
 
+/* textarea 자동 높이 */
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+}
+document.addEventListener("input", e => {
+  if (e.target.classList.contains("compose-textarea")) autoResize(e.target);
+});
+
 /* ══════════════════════════════
    이미지 압축 (PNG/JPEG 모두)
    최대 800px, JPEG quality 0.75
@@ -35,7 +44,6 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
         const canvas = document.createElement("canvas");
         let { width, height } = img;
 
-        // 긴 쪽을 maxSize에 맞게 비율 유지 축소
         if (width > height && width > maxSize) {
           height = Math.round(height * maxSize / width);
           width  = maxSize;
@@ -50,8 +58,6 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
         canvas.width  = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-
-        // PNG도 JPEG으로 변환해서 용량 대폭 감소
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.src = ev.target.result;
@@ -475,11 +481,72 @@ window.handleToggle = async (id, status) => {
 ══════════════════════════════ */
 function render() {
   const allFiltered = getFilteredPosts(filter);
-  renderNav(allFiltered);          // nav는 항상 전체 포스트 기준
-  renderTimeline(allFiltered);     // timeline은 nav필터 추가 적용
+  renderNav(allFiltered);
+  renderTimeline(allFiltered);
 }
 
 window.__renderApp = render;
+
+/* ── 맨 위로 스크롤 ── */
+function scrollToTop() {
+  const tl = document.getElementById("timeline");
+  if (tl) tl.scrollTo({ top: 0, behavior: "smooth" });
+}
+window.scrollToTop = scrollToTop;
+
+// 스크롤 내리면 버튼 표시
+document.addEventListener("DOMContentLoaded", () => {
+  const tl  = document.getElementById("timeline");
+  const btn = document.getElementById("scroll-top-btn");
+  if (!tl || !btn) return;
+  tl.addEventListener("scroll", () => {
+    btn.classList.toggle("visible", tl.scrollTop > 200);
+  });
+});
+
+function setupSrcAutocomplete(inputId, dropdownId) {
+  const input    = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  if (!input || !dropdown) return;
+
+  // dropdown을 input 바로 아래 fixed 위치로 설정
+  function positionDropdown() {
+    const r = input.getBoundingClientRect();
+    dropdown.style.position = "fixed";
+    dropdown.style.top      = r.bottom + 2 + "px";
+    dropdown.style.left     = r.left + "px";
+    dropdown.style.width    = r.width + "px";
+  }
+
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { dropdown.style.display = "none"; return; }
+
+    const { posts: all } = window.__state || {};
+    if (!all) return;
+    const sources = [...new Set(all.map(p => p.src).filter(Boolean))];
+    const matches = sources.filter(s => s.toLowerCase().includes(q));
+
+    if (!matches.length) { dropdown.style.display = "none"; return; }
+
+    dropdown.innerHTML = matches.map(s =>
+      `<div class="src-dropdown-item" onmousedown="selectSrc('${inputId}','${dropdownId}','${s.replace(/'/g,"\'")}')">
+        ${s.replace(new RegExp(q, "gi"), m => `<strong>${m}</strong>`)}
+      </div>`
+    ).join("");
+    positionDropdown();
+    dropdown.style.display = "block";
+  });
+
+  input.addEventListener("blur", () => {
+    setTimeout(() => { dropdown.style.display = "none"; }, 150);
+  });
+}
+
+window.selectSrc = (inputId, dropdownId, value) => {
+  document.getElementById(inputId).value = value;
+  document.getElementById(dropdownId).style.display = "none";
+};
 
 /* ══════════════════════════════
    앱 시작
@@ -493,6 +560,8 @@ import("./posts.js").then(m => {
     '<div class="empty">불러오는 중...</div>';
   await loadPosts();
   render();
+  setupSrcAutocomplete("inp-src", "src-dropdown-main");
+  setupSrcAutocomplete("mob-src", "src-dropdown-mob");
 })();
 
 /* ══════════════════════════════
