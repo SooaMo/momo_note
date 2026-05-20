@@ -6,26 +6,35 @@ export async function loadPosts() {
   posts = await Storage.load();
 }
 
-export async function addPost(en, ko, src, img) {
+export async function addPost(en, ko, src, img, unknownWords = []) {
   const post = {
-    id:       Date.now(),
+    id:           Date.now(),
     en, ko, src, img,
-    ts:       new Date().toISOString(),
-    status:   "none",
-    comments: []
+    ts:           new Date().toISOString(),
+    status:       "none",
+    comments:     [],
+    unknownWords: unknownWords
   };
   posts.unshift(post);
   await Storage.saveOne(post);
   return post;
 }
 
-export async function updatePost(id, { en, ko, src, img }) {
+export async function updatePost(id, { en, ko, src, img, unknownWords }) {
   const post = posts.find(p => p.id === id);
   if (!post) return;
   post.en  = en;
   post.ko  = ko;
   post.src = src;
-  if (img !== undefined) post.img = img;
+  if (img !== undefined)          post.img          = img;
+  if (unknownWords !== undefined) post.unknownWords = unknownWords;
+  await Storage.saveOne(post);
+}
+
+export async function updateUnknownWords(id, words) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  post.unknownWords = words;
   await Storage.saveOne(post);
 }
 

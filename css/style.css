@@ -25,6 +25,7 @@ body {
   flex-shrink: 0;
   border-right: 1px solid #e0ddd6;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 0 0;
   background: #eeecea;
   display: flex;
@@ -1498,4 +1499,167 @@ input[type="file"] {
   .filter-tabs {
     justify-content: flex-end;
   }
+}
+/* ══════════════════════════════
+   모르는 단어 하이라이트
+══════════════════════════════ */
+mark.word-highlight {
+  background: transparent;
+  color: #D4621A;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ══════════════════════════════
+   모르는 단어 섹션
+══════════════════════════════ */
+.unknown-words-section {
+  border-top: 1px solid #f0ede6;
+  background: #faf9f7;
+}
+
+.unknown-words-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: #bbb;
+  cursor: pointer;
+  user-select: none;
+}
+
+.unknown-words-header:hover { color: #888; }
+
+.unknown-words-body {
+  padding: 8px 16px 12px;
+}
+
+.word-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.word-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FDE8D8;
+  color: #D4621A;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px 3px 10px;
+  border-radius: 12px;
+  border: 1px solid #F5B98A;
+}
+
+.word-tag-del {
+  background: none;
+  border: none;
+  color: #F5B98A;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.word-tag-del:hover { color: #D4621A; }
+
+.word-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.word-input {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  color: #1a1a1a;
+}
+
+.word-input:focus { border-color: #D4621A; }
+
+.word-add-btn {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #D4621A;
+  color: #fff;
+  cursor: pointer;
+}
+
+.word-add-btn:hover { background: #A84D14; }
+
+/* ══════════════════════════════
+   nav 검색칸
+══════════════════════════════ */
+.nav-search {
+  padding: 10px 12px 8px;
+  border-top: 1px solid #e0ddd6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #eeecea;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+#nav-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+#nav-search-input:focus { border-color: #D4621A; }
+
+#nav-search-clear {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #ccc;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#nav-search-clear:hover { background: #D4621A; }
+
+/* 등록칸 모르는 단어 입력 */
+.compose-grid .full-row {
+  grid-column: 1 / -1;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f7;
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.compose-grid .full-row:focus {
+  border-color: #D4621A;
+  background: #fff;
 }

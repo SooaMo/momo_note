@@ -2,6 +2,7 @@ import {
   loadPosts,
   addPost,
   updatePost,
+  updateUnknownWords,
   deletePost,
   toggleStatus,
   addComment,
@@ -18,8 +19,9 @@ import {
 } from "./posts.js";
 import { renderNav, getNavFilter } from "./nav.js";
 
-let filter  = "all";
-let imgData = null;
+let filter      = "all";
+let imgData     = null;
+let searchQuery = "";
 
 /* textarea 자동 높이 */
 function autoResize(el) {
@@ -31,9 +33,7 @@ document.addEventListener("input", e => {
 });
 
 /* ══════════════════════════════
-   이미지 압축 (PNG/JPEG 모두)
-   최대 800px, JPEG quality 0.75
-   → Firestore 1MB 제한 대응
+   이미지 압축
 ══════════════════════════════ */
 function compressImage(file, maxSize = 800, quality = 0.75) {
   return new Promise((resolve) => {
@@ -43,20 +43,14 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
       img.onload = () => {
         const canvas = document.createElement("canvas");
         let { width, height } = img;
-
         if (width > height && width > maxSize) {
-          height = Math.round(height * maxSize / width);
-          width  = maxSize;
+          height = Math.round(height * maxSize / width); width = maxSize;
         } else if (height > width && height > maxSize) {
-          width  = Math.round(width  * maxSize / height);
-          height = maxSize;
+          width = Math.round(width * maxSize / height); height = maxSize;
         } else if (width > maxSize) {
-          height = Math.round(height * maxSize / width);
-          width  = maxSize;
+          height = Math.round(height * maxSize / width); width = maxSize;
         }
-
-        canvas.width  = width;
-        canvas.height = height;
+        canvas.width = width; canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
@@ -67,9 +61,94 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
 }
 
 /* ══════════════════════════════
-   등록 (데스크탑)
+   모르는 단어 하이라이트
 ══════════════════════════════ */
-function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, onDone) {
+function highlightWords(text, words) {
+  if (!words || !words.length) return esc(text);
+  const sorted = [...words].sort((a, b) => b.length - a.length);
+  const escaped = sorted.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"));
+  const pattern = escaped.join("|");
+  if (!pattern) return esc(text);
+  try {
+    return esc(text).replace(
+      new RegExp("(" + pattern + ")", "gi"),
+      '<mark class="word-highlight">$1</mark>'
+    );
+  } catch(e) {
+    return esc(text);
+  }
+}
+
+/* ══════════════════════════════
+   모르는 단어 태그 섹션
+══════════════════════════════ */
+function renderUnknownWords(p) {
+  const words = p.unknownWords || [];
+  const tags = words.map((w, i) =>
+    `<span class="word-tag">${esc(w)}<button class="word-tag-del" onclick="removeWord(${p.id},${i})">✕</button></span>`
+  ).join("");
+
+  return `
+    <div class="unknown-words-section">
+      <div class="unknown-words-header" onclick="toggleWordSection(${p.id})">
+        <span>📝 모르는 단어${words.length ? " (" + words.length + ")" : ""}</span>
+        <span id="uw-tog-${p.id}">▼</span>
+      </div>
+      <div class="unknown-words-body" id="uw-body-${p.id}" style="display:none">
+        <div class="word-tags">${tags}</div>
+        <div class="word-input-row">
+          <input type="text" id="word-input-${p.id}" placeholder="단어 입력 후 Enter" class="word-input"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addWord(${p.id})}" />
+          <button class="word-add-btn" onclick="addWord(${p.id})">추가</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+window.toggleWordSection = (id) => {
+  const body = document.getElementById("uw-body-" + id);
+  const tog  = document.getElementById("uw-tog-"  + id);
+  if (!body) return;
+  const isOpen = body.style.display !== "none";
+  body.style.display = isOpen ? "none" : "block";
+  if (tog) tog.textContent = isOpen ? "▼" : "▲";
+};
+
+window.addWord = async (id) => {
+  const input = document.getElementById("word-input-" + id);
+  if (!input) return;
+  const word = input.value.trim();
+  if (!word) return;
+  const { posts: all } = window.__state || {};
+  const post = all && all.find(p => p.id === id);
+  if (!post) return;
+  const words = [...(post.unknownWords || [])];
+  if (!words.includes(word)) words.push(word);
+  await updateUnknownWords(id, words);
+  input.value = "";
+  render();
+  setTimeout(() => {
+    const body = document.getElementById("uw-body-" + id);
+    const tog  = document.getElementById("uw-tog-"  + id);
+    if (body) body.style.display = "block";
+    if (tog)  tog.textContent = "▲";
+  }, 80);
+};
+
+window.removeWord = async (id, idx) => {
+  const { posts: all } = window.__state || {};
+  const post = all && all.find(p => p.id === id);
+  if (!post) return;
+  const words = [...(post.unknownWords || [])];
+  words.splice(idx, 1);
+  await updateUnknownWords(id, words);
+  render();
+};
+
+/* ══════════════════════════════
+   등록
+══════════════════════════════ */
+function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, wordsInputId, onDone) {
   document.getElementById(imgInputId).addEventListener("change", async e => {
     const file = e.target.files[0];
     if (!file) { imgData = null; return; }
@@ -80,18 +159,24 @@ function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, onDon
     const en  = document.getElementById(enInputId).value.trim();
     const ko  = document.getElementById(koInputId).value.trim();
     const src = document.getElementById(srcInputId).value.trim();
-    if (!en || !ko) { alert("영어 표현과 한글 의미는 필수입니다."); return; }
+    if (!en || !ko) { alert("영어 표현과 설명은 필수입니다."); return; }
 
     const btn = document.getElementById(btnId);
     btn.textContent = "저장 중...";
     btn.disabled = true;
 
-    await addPost(en, ko, src, imgData);
+    const wordsEl      = wordsInputId ? document.getElementById(wordsInputId) : null;
+    const unknownWords = wordsEl
+      ? wordsEl.value.split(",").map(w => w.trim()).filter(Boolean)
+      : [];
+
+    await addPost(en, ko, src, imgData, unknownWords);
 
     document.getElementById(enInputId).value  = "";
     document.getElementById(koInputId).value  = "";
     document.getElementById(srcInputId).value = "";
     document.getElementById(imgInputId).value = "";
+    if (wordsEl) wordsEl.value = "";
     imgData = null;
     btn.textContent = "등록";
     btn.disabled = false;
@@ -100,12 +185,12 @@ function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, onDon
   });
 }
 
-setupCompose("inp-img", "inp-en", "inp-ko", "inp-src", "btn-post");
+setupCompose("inp-img", "inp-en", "inp-ko", "inp-src", "btn-post", "inp-words");
 
 /* ══════════════════════════════
    모바일 FAB + 팝업
 ══════════════════════════════ */
-setupCompose("mob-img", "mob-en", "mob-ko", "mob-src", "mob-btn-post", () => {
+setupCompose("mob-img", "mob-en", "mob-ko", "mob-src", "mob-btn-post", "mob-words", () => {
   document.getElementById("mob-compose-modal").classList.remove("open");
 });
 
@@ -120,7 +205,7 @@ document.getElementById("mob-compose-modal").addEventListener("click", e => {
 });
 
 /* ══════════════════════════════
-   필터 (알겠다/모르겠다/전체)
+   필터
 ══════════════════════════════ */
 document.querySelectorAll(".filter-tab").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -152,6 +237,11 @@ window.openEditModal = (id) => {
   } else {
     preview.innerHTML = "";
   }
+  // 기존 모르는 단어 불러오기
+  const editWords = document.getElementById("edit-words");
+  if (editWords) {
+    editWords.value = (p.unknownWords || []).join(", ");
+  }
   document.getElementById("edit-modal").classList.add("open");
 };
 
@@ -177,11 +267,17 @@ document.getElementById("btn-edit-save").addEventListener("click", async () => {
   const en  = document.getElementById("edit-en").value.trim();
   const ko  = document.getElementById("edit-ko").value.trim();
   const src = document.getElementById("edit-src").value.trim();
-  if (!en || !ko) { alert("영어 표현과 한글 의미는 필수입니다."); return; }
+  if (!en || !ko) { alert("영어 표현과 설명은 필수입니다."); return; }
   const btn = document.getElementById("btn-edit-save");
   btn.textContent = "저장 중...";
   btn.disabled = true;
-  await updatePost(id, { en, ko, src, img: editImgData });
+  // 모르는 단어 파싱
+  const editWordsEl  = document.getElementById("edit-words");
+  const unknownWords = editWordsEl
+    ? editWordsEl.value.split(",").map(w => w.trim()).filter(Boolean)
+    : undefined;
+
+  await updatePost(id, { en, ko, src, img: editImgData, unknownWords });
   btn.textContent = "저장";
   btn.disabled = false;
   closeEditModal();
@@ -196,19 +292,16 @@ document.getElementById("edit-modal").addEventListener("click", e => {
    코멘트
 ══════════════════════════════ */
 window.submitComment = async (postId) => {
-  const nameEl = document.getElementById(`cmt-name-${postId}`);
-  const textEl = document.getElementById(`cmt-text-${postId}`);
+  const nameEl = document.getElementById("cmt-name-" + postId);
+  const textEl = document.getElementById("cmt-text-" + postId);
   const name   = nameEl.value.trim();
   const text   = textEl.value.trim();
   if (!name || !text) { alert("이름과 코멘트를 모두 입력해주세요."); return; }
-  const btn = document.getElementById(`cmt-btn-${postId}`);
-  btn.textContent = "저장 중...";
-  btn.disabled = true;
+  const btn = document.getElementById("cmt-btn-" + postId);
+  btn.textContent = "저장 중..."; btn.disabled = true;
   await addComment(postId, name, text);
-  nameEl.value = "";
-  textEl.value = "";
-  btn.textContent = "등록";
-  btn.disabled = false;
+  nameEl.value = ""; textEl.value = "";
+  btn.textContent = "등록"; btn.disabled = false;
   render();
 };
 
@@ -224,14 +317,14 @@ window.handleHeart = async (postId, cid) => {
 };
 
 window.toggleReplyForm = (cid) => {
-  const form = document.getElementById(`reply-form-${cid}`);
+  const form = document.getElementById("reply-form-" + cid);
   if (!form) return;
   form.style.display = form.style.display === "none" ? "flex" : "none";
 };
 
 window.submitReply = async (postId, cid) => {
-  const nameEl = document.getElementById(`rpl-name-${cid}`);
-  const textEl = document.getElementById(`rpl-text-${cid}`);
+  const nameEl = document.getElementById("rpl-name-" + cid);
+  const textEl = document.getElementById("rpl-text-" + cid);
   const name   = nameEl.value.trim();
   const text   = textEl.value.trim();
   if (!name || !text) { alert("이름과 답글을 모두 입력해주세요."); return; }
@@ -245,11 +338,10 @@ window.handleDeleteReply = async (postId, cid, rid) => {
   render();
 };
 
-/* ── 코멘트 인라인 수정 ── */
 window.toggleEditComment = (postId, cid, currentText) => {
-  const form    = document.getElementById(`edit-comment-form-${cid}`);
-  const input   = document.getElementById(`edit-comment-input-${cid}`);
-  const textDiv = document.getElementById(`comment-text-${cid}`);
+  const form    = document.getElementById("edit-comment-form-" + cid);
+  const input   = document.getElementById("edit-comment-input-" + cid);
+  const textDiv = document.getElementById("comment-text-" + cid);
   if (!form) return;
   const isOpen = form.style.display !== "none";
   form.style.display    = isOpen ? "none"  : "flex";
@@ -258,23 +350,22 @@ window.toggleEditComment = (postId, cid, currentText) => {
 };
 
 window.cancelEditComment = (cid) => {
-  document.getElementById(`edit-comment-form-${cid}`).style.display = "none";
-  document.getElementById(`comment-text-${cid}`).style.display = "block";
+  document.getElementById("edit-comment-form-" + cid).style.display = "none";
+  document.getElementById("comment-text-" + cid).style.display = "block";
 };
 
 window.submitEditComment = async (postId, cid) => {
-  const input = document.getElementById(`edit-comment-input-${cid}`);
+  const input = document.getElementById("edit-comment-input-" + cid);
   const text  = input.value.trim();
   if (!text) { alert("내용을 입력해주세요."); return; }
   await editComment(postId, cid, text);
   render();
 };
 
-/* ── 답글 인라인 수정 ── */
 window.toggleEditReply = (postId, cid, rid, currentText) => {
-  const form    = document.getElementById(`edit-reply-form-${rid}`);
-  const input   = document.getElementById(`edit-reply-input-${rid}`);
-  const textDiv = document.getElementById(`reply-text-${rid}`);
+  const form    = document.getElementById("edit-reply-form-" + rid);
+  const input   = document.getElementById("edit-reply-input-" + rid);
+  const textDiv = document.getElementById("reply-text-" + rid);
   if (!form) return;
   const isOpen = form.style.display !== "none";
   form.style.display    = isOpen ? "none"  : "flex";
@@ -283,12 +374,12 @@ window.toggleEditReply = (postId, cid, rid, currentText) => {
 };
 
 window.cancelEditReply = (rid) => {
-  document.getElementById(`edit-reply-form-${rid}`).style.display = "none";
-  document.getElementById(`reply-text-${rid}`).style.display = "block";
+  document.getElementById("edit-reply-form-" + rid).style.display = "none";
+  document.getElementById("reply-text-" + rid).style.display = "block";
 };
 
 window.submitEditReply = async (postId, cid, rid) => {
-  const input = document.getElementById(`edit-reply-input-${rid}`);
+  const input = document.getElementById("edit-reply-input-" + rid);
   const text  = input.value.trim();
   if (!text) { alert("내용을 입력해주세요."); return; }
   await editReply(postId, cid, rid, text);
@@ -296,28 +387,27 @@ window.submitEditReply = async (postId, cid, rid) => {
 };
 
 /* ══════════════════════════════
-   타임라인 렌더
+   렌더 헬퍼
 ══════════════════════════════ */
 function renderReplies(p, c) {
   const replies = c.replies || [];
   const items = replies.map(r => `
-    <div class="reply-item" id="reply-${r.rid}">
+    <div class="reply-item">
       <div class="comment-header">
         <span class="comment-name">${esc(r.name)}</span>
-        <span class="comment-time">${fmtTs(r.ts)}${r.edited ? ' <span class="edited-badge">수정됨</span>' : ''}</span>
-        <button class="comment-edit-btn" onclick="toggleEditReply(${p.id}, ${c.cid}, ${r.rid}, \`${esc(r.text)}\`)">✎</button>
-        <button class="comment-del" onclick="handleDeleteReply(${p.id}, ${c.cid}, ${r.rid})">✕</button>
+        <span class="comment-time">${fmtTs(r.ts)}${r.edited ? ' <span class="edited-badge">수정됨</span>' : ""}</span>
+        <button class="comment-edit-btn" onclick="toggleEditReply(${p.id},${c.cid},${r.rid},\`${esc(r.text)}\`)">✎</button>
+        <button class="comment-del" onclick="handleDeleteReply(${p.id},${c.cid},${r.rid})">✕</button>
       </div>
       <div class="comment-text" id="reply-text-${r.rid}">${esc(r.text)}</div>
       <div class="inline-edit-form" id="edit-reply-form-${r.rid}" style="display:none">
         <textarea class="cmt-text-input" id="edit-reply-input-${r.rid}"></textarea>
         <div class="inline-edit-actions">
           <button class="btn-cancel-sm" onclick="cancelEditReply(${r.rid})">취소</button>
-          <button class="cmt-submit-btn" onclick="submitEditReply(${p.id}, ${c.cid}, ${r.rid})">저장</button>
+          <button class="cmt-submit-btn" onclick="submitEditReply(${p.id},${c.cid},${r.rid})">저장</button>
         </div>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 
   return `
     <div class="replies-wrap">
@@ -325,10 +415,9 @@ function renderReplies(p, c) {
       <div class="reply-form" id="reply-form-${c.cid}" style="display:none">
         <input type="text" id="rpl-name-${c.cid}" placeholder="이름" class="cmt-name-input" />
         <textarea id="rpl-text-${c.cid}" placeholder="답글을 입력하세요…" class="cmt-text-input"></textarea>
-        <button class="cmt-submit-btn" onclick="submitReply(${p.id}, ${c.cid})">등록</button>
+        <button class="cmt-submit-btn" onclick="submitReply(${p.id},${c.cid})">등록</button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderComments(p) {
@@ -337,27 +426,26 @@ function renderComments(p) {
     <div class="comment-item" id="comment-${c.cid}">
       <div class="comment-header">
         <span class="comment-name">${esc(c.name)}</span>
-        <span class="comment-time">${fmtTs(c.ts)}${c.edited ? ' <span class="edited-badge">수정됨</span>' : ''}</span>
-        <button class="comment-edit-btn" onclick="toggleEditComment(${p.id}, ${c.cid}, \`${esc(c.text)}\`)">✎</button>
-        <button class="comment-del" onclick="handleDeleteComment(${p.id}, ${c.cid})">✕</button>
+        <span class="comment-time">${fmtTs(c.ts)}${c.edited ? ' <span class="edited-badge">수정됨</span>' : ""}</span>
+        <button class="comment-edit-btn" onclick="toggleEditComment(${p.id},${c.cid},\`${esc(c.text)}\`)">✎</button>
+        <button class="comment-del" onclick="handleDeleteComment(${p.id},${c.cid})">✕</button>
       </div>
       <div class="comment-text" id="comment-text-${c.cid}">${esc(c.text)}</div>
       <div class="inline-edit-form" id="edit-comment-form-${c.cid}" style="display:none">
         <textarea class="cmt-text-input" id="edit-comment-input-${c.cid}"></textarea>
         <div class="inline-edit-actions">
           <button class="btn-cancel-sm" onclick="cancelEditComment(${c.cid})">취소</button>
-          <button class="cmt-submit-btn" onclick="submitEditComment(${p.id}, ${c.cid})">저장</button>
+          <button class="cmt-submit-btn" onclick="submitEditComment(${p.id},${c.cid})">저장</button>
         </div>
       </div>
       <div class="comment-actions">
         <button class="reply-toggle-btn" onclick="toggleReplyForm(${c.cid})">↩ 답글</button>
-        <button class="heart-btn" onclick="handleHeart(${p.id}, ${c.cid})">
+        <button class="heart-btn" onclick="handleHeart(${p.id},${c.cid})">
           ❤️ <span class="heart-count">${c.hearts || 0}</span>
         </button>
       </div>
       ${renderReplies(p, c)}
-    </div>
-  `).join("");
+    </div>`).join("");
 
   return `
     <div class="comments-section">
@@ -367,10 +455,43 @@ function renderComments(p) {
         <textarea id="cmt-text-${p.id}" placeholder="코멘트를 입력하세요…" class="cmt-text-input"></textarea>
         <button id="cmt-btn-${p.id}" class="cmt-submit-btn" onclick="submitComment(${p.id})">등록</button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
+/* ══════════════════════════════
+   검색 (unknownWords 기반)
+══════════════════════════════ */
+function applySearch(posts) {
+  if (!searchQuery) return posts;
+  const q = searchQuery.toLowerCase();
+  return posts.filter(p =>
+    (p.unknownWords || []).some(w => w.toLowerCase().includes(q))
+  );
+}
+
+window.clearSearch = () => {
+  searchQuery = "";
+  const input = document.getElementById("nav-search-input");
+  const clear = document.getElementById("nav-search-clear");
+  if (input) input.value = "";
+  if (clear) clear.style.display = "none";
+  render();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("nav-search-input");
+  const clear = document.getElementById("nav-search-clear");
+  if (!input) return;
+  input.addEventListener("input", () => {
+    searchQuery = input.value.trim();
+    if (clear) clear.style.display = searchQuery ? "flex" : "none";
+    render();
+  });
+});
+
+/* ══════════════════════════════
+   nav 날짜 필터
+══════════════════════════════ */
 function applyNavFilter(posts) {
   const nf = getNavFilter();
   if (!nf) return posts;
@@ -382,32 +503,26 @@ function applyNavFilter(posts) {
   });
 }
 
+/* ══════════════════════════════
+   타임라인 렌더
+══════════════════════════════ */
 function renderTimeline(filteredPosts) {
   const timeline = document.getElementById("timeline");
-  // nav 날짜 필터 적용
-  const posts = applyNavFilter(filteredPosts);
+  const posts    = applyNavFilter(filteredPosts);
+  const sorted   = [...posts].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
-  // 오래된 것이 아래, 최신이 위 → 내림차순
-  // ts 기준 내림차순 (최신이 위)
-  const sorted = [...posts].sort((a, b) => new Date(b.ts) - new Date(a.ts));
-
-  // 날짜별 그룹 먼저 만들기
   const groups = {};
   sorted.forEach(p => {
     const { y, m, day } = getDateKey(p.ts);
-    const key = `${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const key = y + "-" + String(m).padStart(2,"0") + "-" + String(day).padStart(2,"0");
     if (!groups[key]) groups[key] = { y, m, day, items: [] };
     groups[key].items.push(p);
   });
 
-  // 번호: 날짜별로 오래된 것이 1번
-  // groups 안의 items는 최신순 → 역순으로 번호 부여
   const numberMap = {};
   Object.values(groups).forEach(g => {
     const dayTotal = g.items.length;
-    g.items.forEach((p, i) => {
-      numberMap[p.id] = dayTotal - i; // 오래된 것 = 1번
-    });
+    g.items.forEach((p, i) => { numberMap[p.id] = dayTotal - i; });
   });
 
   if (!Object.keys(groups).length) {
@@ -416,13 +531,11 @@ function renderTimeline(filteredPosts) {
   }
 
   let html = "";
-  // 날짜 그룹: 내림차순 문자열 정렬 (zero-padded라서 정확)
   Object.keys(groups).sort((a, b) => b > a ? 1 : -1).forEach(key => {
     const g     = groups[key];
-    const label = `${g.y}년 ${g.m}월 ${String(g.day).padStart(2, "0")}일`;
+    const label = g.y + "년 " + g.m + "월 " + String(g.day).padStart(2,"0") + "일";
     html += `<div class="date-anchor" id="anchor-${key}">${label}</div>`;
 
-    // 날짜 내에서도 최신이 위
     g.items.forEach(p => {
       const knownCls   = p.status === "known"   ? "known-active"   : "";
       const unknownCls = p.status === "unknown" ? "unknown-active" : "";
@@ -433,8 +546,8 @@ function renderTimeline(filteredPosts) {
         <div class="card ${cardCls}" id="card-${p.id}">
           <div class="card-footer">
             <div class="card-actions-left">
-              <button class="toggle-btn ${knownCls}"   onclick="handleToggle(${p.id}, 'known')">✓ <span class="btn-text">알겠다</span></button>
-              <button class="toggle-btn ${unknownCls}" onclick="handleToggle(${p.id}, 'unknown')">? <span class="btn-text">모르겠다</span></button>
+              <button class="toggle-btn ${knownCls}"   onclick="handleToggle(${p.id},'known')">✓ <span class="btn-text">알겠다</span></button>
+              <button class="toggle-btn ${unknownCls}" onclick="handleToggle(${p.id},'unknown')">? <span class="btn-text">모르겠다</span></button>
             </div>
             <span class="card-time">${fmtTs(p.ts)}</span>
             <div class="card-actions-right">
@@ -449,13 +562,13 @@ function renderTimeline(filteredPosts) {
             ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
           </div>
           <div class="card-body">
-            <div class="card-en">${esc(p.en)}</div>
+            <div class="card-en">${highlightWords(p.en, p.unknownWords)}</div>
             <div class="card-ko">${esc(p.ko)}</div>
             ${p.src ? `<div class="card-source">📌 ${esc(p.src)}</div>` : ""}
           </div>
+          ${renderUnknownWords(p)}
           ${renderComments(p)}
-        </div>
-      `;
+        </div>`;
     });
   });
 
@@ -480,9 +593,10 @@ window.handleToggle = async (id, status) => {
    전체 렌더
 ══════════════════════════════ */
 function render() {
-  const allFiltered = getFilteredPosts(filter);
+  const allFiltered    = getFilteredPosts(filter);
+  const searchFiltered = applySearch(allFiltered);
   renderNav(allFiltered);
-  renderTimeline(allFiltered);
+  renderTimeline(searchFiltered);
 }
 
 window.__renderApp = render;
@@ -494,22 +608,12 @@ function scrollToTop() {
 }
 window.scrollToTop = scrollToTop;
 
-// 스크롤 내리면 버튼 표시
-document.addEventListener("DOMContentLoaded", () => {
-  const tl  = document.getElementById("timeline");
-  const btn = document.getElementById("scroll-top-btn");
-  if (!tl || !btn) return;
-  tl.addEventListener("scroll", () => {
-    btn.classList.toggle("visible", tl.scrollTop > 200);
-  });
-});
-
+/* ── 출처 자동완성 ── */
 function setupSrcAutocomplete(inputId, dropdownId) {
   const input    = document.getElementById(inputId);
   const dropdown = document.getElementById(dropdownId);
   if (!input || !dropdown) return;
 
-  // dropdown을 input 바로 아래 fixed 위치로 설정
   function positionDropdown() {
     const r = input.getBoundingClientRect();
     dropdown.style.position = "fixed";
@@ -521,17 +625,14 @@ function setupSrcAutocomplete(inputId, dropdownId) {
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     if (!q) { dropdown.style.display = "none"; return; }
-
     const { posts: all } = window.__state || {};
     if (!all) return;
     const sources = [...new Set(all.map(p => p.src).filter(Boolean))];
     const matches = sources.filter(s => s.toLowerCase().includes(q));
-
     if (!matches.length) { dropdown.style.display = "none"; return; }
-
     dropdown.innerHTML = matches.map(s =>
-      `<div class="src-dropdown-item" onmousedown="selectSrc('${inputId}','${dropdownId}','${s.replace(/'/g,"\'")}')">
-        ${s.replace(new RegExp(q, "gi"), m => `<strong>${m}</strong>`)}
+      `<div class="src-dropdown-item" onmousedown="selectSrc('${inputId}','${dropdownId}','${s.replace(/'/g,"\\'")}')">
+        ${s.replace(new RegExp(q, "gi"), m => "<strong>" + m + "</strong>")}
       </div>`
     ).join("");
     positionDropdown();

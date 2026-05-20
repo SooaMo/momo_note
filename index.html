@@ -20,6 +20,10 @@
       <button id="sidebar-close" onclick="closeSidebar()">✕</button>
     </div>
     <div id="nav-tree"></div>
+    <div id="nav-search" class="nav-search">
+      <input type="text" id="nav-search-input" placeholder="🔍 단어 검색..." autocomplete="off" />
+      <button id="nav-search-clear" onclick="clearSearch()" style="display:none">✕</button>
+    </div>
     <div id="lang-switcher" class="lang-switcher"></div>
   </div>
 
@@ -35,6 +39,7 @@
           <input type="text" id="inp-src" placeholder="출처 (예: Netflix Drama, 책 이름…)" class="src-input" autocomplete="off" />
         <div class="src-dropdown" id="src-dropdown-main" style="display:none"></div>
           <input type="file" id="inp-img" accept="image/*" class="img-input" />
+          <input type="text" id="inp-words" placeholder="모르는 단어 (쉼표로 구분, 예: vexed, riper)" class="full-row" autocomplete="off" />
         </div>
         <div class="compose-bottom">
           <button class="btn-post" id="btn-post">등록</button>
@@ -78,6 +83,7 @@
           <div class="src-dropdown" id="src-dropdown-mob" style="display:none"></div>
         </div>
         <input type="file" id="mob-img" accept="image/*" />
+        <input type="text" id="mob-words" placeholder="모르는 단어 (쉼표로 구분)" autocomplete="off" />
       </div>
     </div>
     <div class="modal-footer">
@@ -103,6 +109,7 @@
       </div>
       <div id="edit-img-preview" class="edit-img-preview"></div>
       <input type="file" id="edit-img" accept="image/*" />
+      <input type="text" id="edit-words" placeholder="모르는 단어 (쉼표로 구분, 예: steep, roguery)" autocomplete="off" style="margin-top:6px" />
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeEditModal()">취소</button>
