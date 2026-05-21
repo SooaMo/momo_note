@@ -21,8 +21,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-// 페이지별로 html에서 window.__LANG_COL__ 을 선언해서 컬렉션을 지정
-// 선언이 없으면 기본값 "eng_posts" 사용 → 기존 데이터 그대로 유지
+// Collection name is set via window.__LANG_COL__ in each HTML page
+// Falls back to "eng_posts" if not declared
 const COL = window.__LANG_COL__ || "eng_posts";
 
 const Storage = {

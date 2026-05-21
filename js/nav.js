@@ -23,7 +23,7 @@ export function renderNav(filteredPosts) {
   let html = "";
 
   const allActive = navFilter === null ? "nav-active" : "";
-  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">전체보기</div>`;
+  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">All</div>`;
 
   Object.keys(tree).sort((a, b) => b - a).forEach(y => {
     const yKey    = `y${y}`;
@@ -33,14 +33,14 @@ export function renderNav(filteredPosts) {
       <div class="nav-year">
         <div class="nav-year-label ${yActive}" onclick="setNavFilter({y:${y}})">
           <span class="nav-toggle open" id="tog-${yKey}" onclick="event.stopPropagation();toggleNav('${yKey}')">▶</span>
-          ${y}년
+          ${y}
         </div>
         <div class="nav-children open" id="ch-${yKey}">
     `;
 
     Object.keys(tree[y]).sort((a, b) => b - a).forEach(m => {
       const mKey    = `m${y}-${m}`;
-      const mName   = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"][+m - 1];
+      const mName   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m - 1];
       const mActive = navFilter && navFilter.y == y && navFilter.m == m && !navFilter.day ? "nav-active" : "";
 
       html += `
@@ -56,7 +56,7 @@ export function renderNav(filteredPosts) {
         const dActive = navFilter && navFilter.y == y && navFilter.m == m && navFilter.day == day ? "nav-active" : "";
         const cnt = countMap[`${y}-${m}-${day}`] || 0;
         html += `<div class="nav-day ${dActive}" onclick="setNavFilter({y:${y},m:${m},day:${day}})">
-          ${String(day).padStart(2, "0")}일 (${cnt})
+          ${String(day).padStart(2, "0")} (${cnt})
         </div>`;
       });
 
@@ -67,12 +67,12 @@ export function renderNav(filteredPosts) {
   });
 
   if (!html) {
-    html = '<div style="padding:8px 12px;font-size:12px;color:#bbb">항목 없음</div>';
+    html = '<div style="padding:8px 12px;font-size:12px;color:#bbb">No entries</div>';
   }
 
   document.getElementById("nav-tree").innerHTML = html;
 
-  // 언어 switcher
+  // Language switcher
   const currentPage = window.location.pathname;
   const isEng = !currentPage.includes("french");
   const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
@@ -94,7 +94,7 @@ export function toggleNav(key) {
 }
 window.toggleNav = toggleNav;
 
-/* ── 미니 달력 ── */
+/* ── Mini calendar ── */
 window.openMiniCal = (y, m, event) => {
   event.stopPropagation();
 
@@ -107,18 +107,18 @@ window.openMiniCal = (y, m, event) => {
 
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDay    = new Date(y, m - 1, 1).getDay();
-  const mName = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"][m - 1];
+  const mName = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1];
 
   let grid = `
     <div class="mini-cal-header">
-      <span>${y}년 ${mName}</span>
+      <span>${y} ${mName}</span>
       <button onclick="document.getElementById('mini-cal-popup').remove()">✕</button>
     </div>
     <div class="mini-cal-grid">
-      <div class="mini-cal-dow">일</div><div class="mini-cal-dow">월</div>
-      <div class="mini-cal-dow">화</div><div class="mini-cal-dow">수</div>
-      <div class="mini-cal-dow">목</div><div class="mini-cal-dow">금</div>
-      <div class="mini-cal-dow">토</div>
+      <div class="mini-cal-dow">Sun</div><div class="mini-cal-dow">Mon</div>
+      <div class="mini-cal-dow">Tue</div><div class="mini-cal-dow">Wed</div>
+      <div class="mini-cal-dow">Thu</div><div class="mini-cal-dow">Fri</div>
+      <div class="mini-cal-dow">Sat</div>
   `;
 
   for (let i = 0; i < firstDay; i++) grid += `<div></div>`;
@@ -139,18 +139,18 @@ window.openMiniCal = (y, m, event) => {
   grid += `</div>`;
   popup.innerHTML = grid;
 
-  // 월 label 오른쪽에 fixed 위치
+  // Fixed position to the right of the label
   const rect = event.currentTarget.getBoundingClientRect();
   popup.style.top  = rect.top + "px";
   popup.style.left = (rect.right + 8) + "px";
 
-  // 화면 오른쪽 밖으로 나가면 왼쪽으로
+  // Flip left if overflowing right edge
   document.body.appendChild(popup);
   const popRect = popup.getBoundingClientRect();
   if (popRect.right > window.innerWidth - 8) {
     popup.style.left = (rect.left - popRect.width - 8) + "px";
   }
-  // 화면 아래로 넘치면 위로 올리기
+  // Flip up if overflowing bottom edge
   if (popRect.bottom > window.innerHeight - 8) {
     popup.style.top = (window.innerHeight - popRect.height - 8) + "px";
   }
@@ -165,7 +165,7 @@ window.openMiniCal = (y, m, event) => {
   }, 0);
 };
 
-/* ── nav 필터 ── */
+/* ── Nav filter ── */
 window.setNavFilter = (f) => {
   navFilter = f;
   if (window.__renderApp) window.__renderApp();
