@@ -85,10 +85,7 @@ function highlightWords(text, words) {
 function renderUnknownWords(p) {
   const words = p.unknownWords || [];
   const tags = words.map((w, i) =>
-    `<span class="word-tag">
-      <span class="word-tag-label" onclick="lookupWord(event,'${esc(w).replace(/'/g,"\\'")}',${p.id})">${esc(w)}</span>
-      <button class="word-tag-del" onclick="removeWord(${p.id},${i})">✕</button>
-    </span>`
+    `<span class="word-tag">${esc(w)}<button class="word-tag-del" onclick="removeWord(${p.id},${i})">✕</button></span>`
   ).join("");
 
   return `
@@ -99,7 +96,6 @@ function renderUnknownWords(p) {
       </div>
       <div class="unknown-words-body" id="uw-body-${p.id}" style="display:none">
         <div class="word-tags">${tags}</div>
-        <div id="def-panel-${p.id}" class="def-panel" style="display:none"></div>
         <div class="word-input-row">
           <input type="text" id="word-input-${p.id}" placeholder="Type a word and press Enter" class="word-input"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addWord(${p.id})}" />
@@ -108,80 +104,6 @@ function renderUnknownWords(p) {
       </div>
     </div>`;
 }
-
-/* ══════════════════════════════
-   단어 뜻 조회 (Free Dictionary API)
-══════════════════════════════ */
-window.lookupWord = async (e, word, postId) => {
-  e.stopPropagation();
-
-  const panel = document.getElementById("def-panel-" + postId);
-  if (!panel) return;
-
-  // 같은 단어 다시 클릭하면 패널 닫기
-  if (panel.dataset.word === word && panel.style.display !== "none") {
-    panel.style.display = "none";
-    panel.dataset.word  = "";
-    document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
-    return;
-  }
-
-  // 활성 단어 표시
-  document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
-  e.target.classList.add("word-tag-active");
-  panel.dataset.word  = word;
-  panel.style.display = "block";
-  panel.innerHTML     = `<span class="def-loading">Looking up <em>${word}</em>…</span>`;
-
-  try {
-    const res  = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) throw new Error("not found");
-    const data = await res.json();
-
-    const entry    = data[0];
-    const phonetic = entry.phonetics?.find(ph => ph.text)?.text || "";
-    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(word + " meaning")}`;
-
-    let html = `
-      <div class="def-header">
-        <span class="def-word">${esc(word)}</span>
-        ${phonetic ? `<span class="def-phonetic">${esc(phonetic)}</span>` : ""}
-        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
-        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
-      </div>`;
-
-    entry.meanings.slice(0, 3).forEach(m => {
-      html += `<div class="def-pos">${esc(m.partOfSpeech)}</div>`;
-      m.definitions.slice(0, 2).forEach((d, i) => {
-        html += `<div class="def-item">
-          <span class="def-num">${i + 1}.</span>
-          <span class="def-text">${esc(d.definition)}</span>
-          ${d.example ? `<div class="def-example">"${esc(d.example)}"</div>` : ""}
-        </div>`;
-      });
-    });
-
-    panel.innerHTML = html;
-
-  } catch {
-    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(word + " meaning")}`;
-    panel.innerHTML = `
-      <div class="def-header">
-        <span class="def-word">${esc(word)}</span>
-        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
-        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
-      </div>
-      <div class="def-item" style="color:#999;font-size:12px">Definition not found. Try searching on Google.</div>`;
-  }
-};
-
-window.closeDefPanel = (postId) => {
-  const panel = document.getElementById("def-panel-" + postId);
-  if (!panel) return;
-  panel.style.display = "none";
-  panel.dataset.word  = "";
-  document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
-};
 
 window.toggleWordSection = (id) => {
   const body = document.getElementById("uw-body-" + id);
@@ -693,6 +615,8 @@ function setupSrcAutocomplete(inputId, dropdownId) {
   const dropdown = document.getElementById(dropdownId);
   if (!input || !dropdown) return;
 
+  let activeIdx = -1;
+
   function positionDropdown() {
     const r = input.getBoundingClientRect();
     dropdown.style.position = "fixed";
@@ -701,7 +625,14 @@ function setupSrcAutocomplete(inputId, dropdownId) {
     dropdown.style.width    = r.width + "px";
   }
 
+  function setActive(idx) {
+    const items = dropdown.querySelectorAll(".src-dropdown-item");
+    items.forEach((el, i) => el.classList.toggle("src-dropdown-active", i === idx));
+    activeIdx = idx;
+  }
+
   input.addEventListener("input", () => {
+    activeIdx = -1;
     const q = input.value.trim().toLowerCase();
     if (!q) { dropdown.style.display = "none"; return; }
     const { posts: all } = window.__state || {};
@@ -718,8 +649,27 @@ function setupSrcAutocomplete(inputId, dropdownId) {
     dropdown.style.display = "block";
   });
 
+  input.addEventListener("keydown", (e) => {
+    if (dropdown.style.display === "none") return;
+    const items = dropdown.querySelectorAll(".src-dropdown-item");
+    if (!items.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive(Math.min(activeIdx + 1, items.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive(Math.max(activeIdx - 1, 0));
+    } else if (e.key === "Enter" && activeIdx >= 0) {
+      e.preventDefault();
+      items[activeIdx].dispatchEvent(new MouseEvent("mousedown"));
+    } else if (e.key === "Escape") {
+      dropdown.style.display = "none";
+      activeIdx = -1;
+    }
+  });
+
   input.addEventListener("blur", () => {
-    setTimeout(() => { dropdown.style.display = "none"; }, 150);
+    setTimeout(() => { dropdown.style.display = "none"; activeIdx = -1; }, 150);
   });
 }
 
@@ -756,3 +706,187 @@ window.closeSidebar = () => {
   document.getElementById("sidebar").classList.remove("open");
   document.getElementById("sidebar-overlay").classList.remove("open");
 };
+/* ══════════════════════════════
+   Quiz Modal
+══════════════════════════════ */
+(function injectQuizModal() {
+  const modal = document.createElement("div");
+  modal.id = "quiz-modal";
+  modal.innerHTML = `
+    <div class="quiz-modal-box">
+      <div class="quiz-modal-header">
+        <span class="quiz-modal-title">🎯 Word Quiz</span>
+        <button class="quiz-modal-close" onclick="closeQuizModal()">✕</button>
+      </div>
+      <div class="quiz-modal-body" id="quiz-body">
+        <div class="quiz-start-screen" id="quiz-start">
+          <div class="quiz-start-info" id="quiz-start-info"></div>
+          <button class="quiz-start-btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+        <div id="quiz-game" style="display:none">
+          <div class="quiz-prog-row">
+            <div class="quiz-prog-wrap"><div class="quiz-prog-fill" id="q-prog-fill"></div></div>
+            <span class="quiz-prog-text" id="q-prog-text"></span>
+          </div>
+          <div class="quiz-card" id="q-card" onclick="flipQuizCard()">
+            <span class="quiz-card-hint" id="q-hint">tap to reveal</span>
+            <div class="quiz-card-word" id="q-word"></div>
+            <div class="quiz-card-src"  id="q-src"></div>
+            <div class="quiz-card-def"  id="q-def"  style="display:none"></div>
+            <div class="quiz-card-ex"   id="q-ex"   style="display:none"></div>
+          </div>
+          <div class="quiz-actions" id="q-actions">
+            <button class="quiz-btn-reveal" onclick="flipQuizCard()">Reveal</button>
+          </div>
+        </div>
+        <div id="quiz-result" style="display:none">
+          <div class="quiz-result-score" id="q-score"></div>
+          <div class="quiz-result-label" id="q-label"></div>
+          <div class="quiz-result-stats" id="q-stats"></div>
+          <button class="quiz-start-btn" onclick="startQuiz()">Shuffle &amp; Try Again</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener("click", e => { if (e.target === modal) closeQuizModal(); });
+})();
+
+window.openQuizModal = () => {
+  const { posts: all } = window.__state || {};
+  // unknown words from posts that are not "known"
+  const wordEntries = [];
+  (all || []).forEach(p => {
+    if (p.status === "known") return;
+    (p.unknownWords || []).forEach(w => {
+      if (w) wordEntries.push({ word: w, src: p.src || "" });
+    });
+  });
+  const unique = [];
+  const seen   = new Set();
+  wordEntries.forEach(e => {
+    const key = e.word.toLowerCase();
+    if (!seen.has(key)) { seen.add(key); unique.push(e); }
+  });
+  window.__quizWords   = unique;
+  window.__quizDeck    = [];
+  window.__quizIdx     = 0;
+  window.__quizKnew    = 0;
+  window.__quizNope    = 0;
+  window.__quizFlipped = false;
+
+  const info = document.getElementById("quiz-start-info");
+  const total = unique.length;
+  info.textContent = total
+    ? `${total} word${total > 1 ? "s" : ""} from unknown posts · ${Math.min(total, 10)} per round`
+    : "No unknown words yet. Add words to your posts first!";
+
+  document.getElementById("quiz-start").style.display   = "block";
+  document.getElementById("quiz-game").style.display    = "none";
+  document.getElementById("quiz-result").style.display  = "none";
+  document.getElementById("quiz-modal").classList.add("open");
+};
+
+window.closeQuizModal = () => {
+  document.getElementById("quiz-modal").classList.remove("open");
+};
+
+function shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+window.startQuiz = () => {
+  const words = window.__quizWords || [];
+  if (!words.length) return;
+  window.__quizDeck    = shuffleArr(words).slice(0, 10);
+  window.__quizIdx     = 0;
+  window.__quizKnew    = 0;
+  window.__quizNope    = 0;
+  window.__quizFlipped = false;
+
+  document.getElementById("quiz-start").style.display  = "none";
+  document.getElementById("quiz-result").style.display = "none";
+  document.getElementById("quiz-game").style.display   = "block";
+  showQuizCard();
+};
+
+function showQuizCard() {
+  const deck = window.__quizDeck;
+  const idx  = window.__quizIdx;
+  const item = deck[idx];
+  window.__quizFlipped = false;
+
+  document.getElementById("q-word").textContent = item.word;
+  document.getElementById("q-src").textContent  = item.src ? "from: " + item.src : "";
+  document.getElementById("q-hint").style.display = "block";
+  document.getElementById("q-def").style.display  = "none";
+  document.getElementById("q-ex").style.display   = "none";
+  document.getElementById("q-def").textContent    = "";
+  document.getElementById("q-ex").textContent     = "";
+
+  const pct = Math.round((idx + 1) / deck.length * 100);
+  document.getElementById("q-prog-fill").style.width  = pct + "%";
+  document.getElementById("q-prog-text").textContent  = (idx + 1) + " / " + deck.length;
+  document.getElementById("q-actions").innerHTML =
+    `<button class="quiz-btn-reveal" onclick="flipQuizCard()">Reveal</button>`;
+
+  // Fetch definition
+  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(item.word)}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      const m = data[0]?.meanings?.[0];
+      if (!m) return;
+      const d = m.definitions?.[0];
+      window.__quizDeck[idx]._def = (m.partOfSpeech ? "(" + m.partOfSpeech + ") " : "") + (d?.definition || "");
+      window.__quizDeck[idx]._ex  = d?.example || "";
+    })
+    .catch(() => {});
+}
+
+window.flipQuizCard = () => {
+  if (window.__quizFlipped) return;
+  window.__quizFlipped = true;
+
+  const idx  = window.__quizIdx;
+  const item = window.__quizDeck[idx];
+  document.getElementById("q-hint").style.display = "none";
+  document.getElementById("q-def").style.display  = "block";
+  document.getElementById("q-def").textContent    = item._def || "(definition loading…)";
+  if (item._ex) {
+    document.getElementById("q-ex").style.display  = "block";
+    document.getElementById("q-ex").textContent    = '"' + item._ex + '"';
+  }
+  document.getElementById("q-actions").innerHTML = `
+    <button class="quiz-btn-nope" onclick="quizAnswer(false)">Still learning</button>
+    <button class="quiz-btn-knew" onclick="quizAnswer(true)">Got it!</button>`;
+};
+
+window.quizAnswer = (gotIt) => {
+  if (gotIt) window.__quizKnew++; else window.__quizNope++;
+  window.__quizIdx++;
+  if (window.__quizIdx >= window.__quizDeck.length) {
+    showQuizResult();
+  } else {
+    showQuizCard();
+  }
+};
+
+function showQuizResult() {
+  const knew  = window.__quizKnew;
+  const total = window.__quizDeck.length;
+  const pct   = Math.round(knew / total * 100);
+  document.getElementById("quiz-game").style.display   = "none";
+  document.getElementById("quiz-result").style.display = "block";
+  document.getElementById("q-score").textContent       = pct + "%";
+  document.getElementById("q-label").textContent       = `${knew} / ${total} words correct`;
+  document.getElementById("q-stats").innerHTML         =
+    `<span class="quiz-stat-knew">Got it: ${knew}</span>
+     <span class="quiz-stat-nope">Still learning: ${window.__quizNope}</span>`;
+  document.getElementById("q-prog-fill").style.width  = "100%";
+  document.getElementById("q-prog-text").textContent  = total + " / " + total;
+}

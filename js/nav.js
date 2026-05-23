@@ -55,8 +55,12 @@ export function renderNav(filteredPosts) {
       [...tree[y][m]].sort((a, b) => b - a).forEach(day => {
         const dActive = navFilter && navFilter.y == y && navFilter.m == m && navFilter.day == day ? "nav-active" : "";
         const cnt = countMap[`${y}-${m}-${day}`] || 0;
+        const suffix = ([11,12,13].includes(day % 100)) ? "th"
+          : day % 10 === 1 ? "st"
+          : day % 10 === 2 ? "nd"
+          : day % 10 === 3 ? "rd" : "th";
         html += `<div class="nav-day ${dActive}" onclick="setNavFilter({y:${y},m:${m},day:${day}})">
-          ${String(day).padStart(2, "0")} (${cnt})
+          ${day}${suffix}<span class="nav-day-cnt"> ·(${cnt})</span>
         </div>`;
       });
 
@@ -72,13 +76,15 @@ export function renderNav(filteredPosts) {
 
   document.getElementById("nav-tree").innerHTML = html;
 
-  // Language switcher
+  // Language switcher + Quiz button
   const currentPage = window.location.pathname;
   const isEng = !currentPage.includes("french");
   const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
   const switcher = document.getElementById("lang-switcher");
   if (switcher) {
     switcher.innerHTML = `
+      <button class="quiz-nav-btn" onclick="openQuizModal()">🎯 Word Quiz</button>
+      <div class="lang-switcher-divider"></div>
       <a href="${basePath}index.html"  class="${isEng  ? "lang-active" : ""}">🇬🇧 English</a>
       <a href="${basePath}french.html" class="${!isEng ? "lang-active" : ""}">🇫🇷 Français</a>
     `;
