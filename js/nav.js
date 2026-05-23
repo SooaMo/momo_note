@@ -78,7 +78,7 @@ export function renderNav(filteredPosts) {
 
   // Language switcher + Quiz button
   const currentPage = window.location.pathname;
-  const isEng = !currentPage.includes("french");
+  const isEng = !currentPage.toLowerCase().includes("french");
   const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
   const switcher = document.getElementById("lang-switcher");
   if (switcher) {
@@ -86,7 +86,7 @@ export function renderNav(filteredPosts) {
       <button class="quiz-nav-btn" onclick="openQuizModal()">🎯 Word Quiz</button>
       <div class="lang-switcher-divider"></div>
       <a href="${basePath}index.html"  class="${isEng  ? "lang-active" : ""}">🇬🇧 English</a>
-      <a href="${basePath}french.html" class="${!isEng ? "lang-active" : ""}">🇫🇷 Français</a>
+      <a href="${basePath}French.html" class="${!isEng ? "lang-active" : ""}">🇫🇷 Français</a>
     `;
   }
 }
