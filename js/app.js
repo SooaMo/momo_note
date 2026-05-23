@@ -85,7 +85,10 @@ function highlightWords(text, words) {
 function renderUnknownWords(p) {
   const words = p.unknownWords || [];
   const tags = words.map((w, i) =>
-    `<span class="word-tag">${esc(w)}<button class="word-tag-del" onclick="removeWord(${p.id},${i})">✕</button></span>`
+    `<span class="word-tag">
+      <span class="word-tag-label" onclick="lookupWord(event,'${esc(w).replace(/'/g,"\\'")}',${p.id})">${esc(w)}</span>
+      <button class="word-tag-del" onclick="removeWord(${p.id},${i})">✕</button>
+    </span>`
   ).join("");
 
   return `
@@ -96,6 +99,7 @@ function renderUnknownWords(p) {
       </div>
       <div class="unknown-words-body" id="uw-body-${p.id}" style="display:none">
         <div class="word-tags">${tags}</div>
+        <div id="def-panel-${p.id}" class="def-panel" style="display:none"></div>
         <div class="word-input-row">
           <input type="text" id="word-input-${p.id}" placeholder="Type a word and press Enter" class="word-input"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addWord(${p.id})}" />
@@ -104,6 +108,80 @@ function renderUnknownWords(p) {
       </div>
     </div>`;
 }
+
+/* ══════════════════════════════
+   단어 뜻 조회 (Free Dictionary API)
+══════════════════════════════ */
+window.lookupWord = async (e, word, postId) => {
+  e.stopPropagation();
+
+  const panel = document.getElementById("def-panel-" + postId);
+  if (!panel) return;
+
+  // 같은 단어 다시 클릭하면 패널 닫기
+  if (panel.dataset.word === word && panel.style.display !== "none") {
+    panel.style.display = "none";
+    panel.dataset.word  = "";
+    document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+    return;
+  }
+
+  // 활성 단어 표시
+  document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+  e.target.classList.add("word-tag-active");
+  panel.dataset.word  = word;
+  panel.style.display = "block";
+  panel.innerHTML     = `<span class="def-loading">Looking up <em>${word}</em>…</span>`;
+
+  try {
+    const res  = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!res.ok) throw new Error("not found");
+    const data = await res.json();
+
+    const entry    = data[0];
+    const phonetic = entry.phonetics?.find(ph => ph.text)?.text || "";
+    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(word + " meaning")}`;
+
+    let html = `
+      <div class="def-header">
+        <span class="def-word">${esc(word)}</span>
+        ${phonetic ? `<span class="def-phonetic">${esc(phonetic)}</span>` : ""}
+        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
+        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
+      </div>`;
+
+    entry.meanings.slice(0, 3).forEach(m => {
+      html += `<div class="def-pos">${esc(m.partOfSpeech)}</div>`;
+      m.definitions.slice(0, 2).forEach((d, i) => {
+        html += `<div class="def-item">
+          <span class="def-num">${i + 1}.</span>
+          <span class="def-text">${esc(d.definition)}</span>
+          ${d.example ? `<div class="def-example">"${esc(d.example)}"</div>` : ""}
+        </div>`;
+      });
+    });
+
+    panel.innerHTML = html;
+
+  } catch {
+    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(word + " meaning")}`;
+    panel.innerHTML = `
+      <div class="def-header">
+        <span class="def-word">${esc(word)}</span>
+        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
+        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
+      </div>
+      <div class="def-item" style="color:#999;font-size:12px">Definition not found. Try searching on Google.</div>`;
+  }
+};
+
+window.closeDefPanel = (postId) => {
+  const panel = document.getElementById("def-panel-" + postId);
+  if (!panel) return;
+  panel.style.display = "none";
+  panel.dataset.word  = "";
+  document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+};
 
 window.toggleWordSection = (id) => {
   const body = document.getElementById("uw-body-" + id);

@@ -1568,6 +1568,124 @@ mark.word-highlight {
 
 .word-tag-del:hover { color: #D4621A; }
 
+.word-tag-label {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0 2px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.word-tag-label:hover {
+  background: #F5B98A;
+  color: #7a2d00;
+}
+
+.word-tag-label.word-tag-active {
+  background: #D4621A;
+  color: #fff;
+  padding: 0 4px;
+}
+
+/* ── Definition panel ── */
+.def-panel {
+  background: #fffdf9;
+  border: 1px solid #F5B98A;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  animation: defFadeIn 0.15s ease;
+}
+
+@keyframes defFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.def-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.def-word {
+  font-weight: 600;
+  color: #D4621A;
+  font-size: 14px;
+}
+
+.def-phonetic {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.def-google-link {
+  margin-left: auto;
+  font-size: 11px;
+  color: #888;
+  text-decoration: none;
+  border: 1px solid #e0d8cf;
+  border-radius: 6px;
+  padding: 2px 8px;
+  transition: background 0.12s;
+}
+
+.def-google-link:hover {
+  background: #f0ece6;
+  color: #D4621A;
+}
+
+.def-close {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.def-close:hover { color: #D4621A; }
+
+.def-pos {
+  font-size: 11px;
+  font-style: italic;
+  color: #bbb;
+  margin: 6px 0 2px;
+}
+
+.def-item {
+  margin-bottom: 5px;
+  padding-left: 2px;
+}
+
+.def-num {
+  color: #F5B98A;
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.def-text {
+  color: #2a2a2a;
+}
+
+.def-example {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+  margin-top: 2px;
+  padding-left: 14px;
+}
+
+.def-loading {
+  color: #bbb;
+  font-size: 12px;
+}
+
 .word-input-row {
   display: flex;
   gap: 6px;
