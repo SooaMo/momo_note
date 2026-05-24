@@ -1548,6 +1548,14 @@ mark.word-highlight {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 0.125rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-radius: 0.25rem;
+  padding: 0 0.0625rem;
+}
+
+mark.word-highlight:hover {
+  background: #FDE8D8;
 }
 
 /* ══════════════════════════════

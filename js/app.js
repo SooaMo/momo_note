@@ -63,7 +63,7 @@ function compressImage(file, maxSize = 800, quality = 0.75) {
 /* ══════════════════════════════
    모르는 단어 하이라이트
 ══════════════════════════════ */
-function highlightWords(text, words) {
+function highlightWords(text, words, postId) {
   if (!words || !words.length) return esc(text);
   const sorted = [...words].sort((a, b) => b.length - a.length);
   const escaped = sorted.map(w => w.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"));
@@ -72,7 +72,10 @@ function highlightWords(text, words) {
   try {
     return esc(text).replace(
       new RegExp("(" + pattern + ")", "gi"),
-      '<mark class="word-highlight">$1</mark>'
+      (match) => {
+        const safe = match.replace(/'/g, "\\'");
+        return `<mark class="word-highlight" onclick="lookupWordInline(event,'${safe}',${postId})">${match}</mark>`;
+      }
     );
   } catch(e) {
     return esc(text);
@@ -176,6 +179,78 @@ window.closeDefPanel = (postId) => {
   panel.style.display = "none";
   panel.dataset.word  = "";
   document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+};
+
+/* ── 문장 내 하이라이트 단어 클릭 → unknown words 섹션 열고 뜻 표시 ── */
+window.lookupWordInline = async (e, word, postId) => {
+  e.stopPropagation();
+
+  // unknown words 섹션이 닫혀있으면 열기
+  const body = document.getElementById("uw-body-" + postId);
+  const tog  = document.getElementById("uw-tog-"  + postId);
+  if (body && body.style.display === "none") {
+    body.style.display = "block";
+    if (tog) tog.textContent = "▲";
+  }
+
+  // def-panel 스크롤 후 lookupWord 재사용
+  const panel = document.getElementById("def-panel-" + postId);
+  if (panel) {
+    setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
+  }
+
+  // word-tag-label 중 해당 단어 활성화
+  document.querySelectorAll(".word-tag-label").forEach(el => {
+    el.classList.toggle("word-tag-active", el.textContent.trim().toLowerCase() === word.toLowerCase());
+  });
+
+  // lookupWord 로직 재사용 (e.target을 word-tag-label처럼 처리)
+  if (!panel) return;
+  if (panel.dataset.word === word && panel.style.display !== "none") {
+    panel.style.display = "none";
+    panel.dataset.word  = "";
+    document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+    return;
+  }
+
+  panel.dataset.word  = word;
+  panel.style.display = "block";
+  panel.innerHTML     = `<span class="def-loading">Looking up <em>${esc(word)}</em>…</span>`;
+
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(word + " meaning")}`;
+  try {
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!res.ok) throw new Error("not found");
+    const data     = await res.json();
+    const entry    = data[0];
+    const phonetic = entry.phonetics?.find(ph => ph.text)?.text || "";
+    let html = `
+      <div class="def-header">
+        <span class="def-word">${esc(word)}</span>
+        ${phonetic ? `<span class="def-phonetic">${esc(phonetic)}</span>` : ""}
+        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
+        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
+      </div>`;
+    entry.meanings.slice(0, 3).forEach(m => {
+      html += `<div class="def-pos">${esc(m.partOfSpeech)}</div>`;
+      m.definitions.slice(0, 2).forEach((d, i) => {
+        html += `<div class="def-item">
+          <span class="def-num">${i + 1}.</span>
+          <span class="def-text">${esc(d.definition)}</span>
+          ${d.example ? `<div class="def-example">"${esc(d.example)}"</div>` : ""}
+        </div>`;
+      });
+    });
+    panel.innerHTML = html;
+  } catch {
+    panel.innerHTML = `
+      <div class="def-header">
+        <span class="def-word">${esc(word)}</span>
+        <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
+        <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
+      </div>
+      <div class="def-item" style="color:#999;font-size:0.75rem">Definition not found. Try searching on Google.</div>`;
+  }
 };
 
 window.toggleWordSection = (id) => {
@@ -636,7 +711,7 @@ function renderTimeline(filteredPosts) {
             ${p.img ? `<div class="card-img-wrap"><img class="card-img" src="${p.img}" alt="첨부 이미지" /></div>` : ""}
           </div>
           <div class="card-body">
-            <div class="card-en">${highlightWords(p.en, p.unknownWords)}</div>
+            <div class="card-en">${highlightWords(p.en, p.unknownWords, p.id)}</div>
             <div class="card-ko">${esc(p.ko)}</div>
             ${p.src ? `<div class="card-source">📌 ${esc(p.src)}</div>` : ""}
           </div>
