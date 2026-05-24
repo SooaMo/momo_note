@@ -880,6 +880,7 @@ window.closeSidebar = () => {
             <span class="quiz-card-hint" id="q-hint">tap to reveal</span>
             <div class="quiz-card-word" id="q-word"></div>
             <div class="quiz-card-src"  id="q-src"></div>
+            <div class="quiz-card-expr" id="q-expr"></div>
             <div class="quiz-card-def"  id="q-def"  style="display:none"></div>
             <div class="quiz-card-ex"   id="q-ex"   style="display:none"></div>
           </div>
@@ -905,7 +906,7 @@ window.openQuizModal = () => {
   (all || []).forEach(p => {
     if (p.status === "known") return;
     (p.unknownWords || []).forEach(w => {
-      if (w) wordEntries.push({ word: w, src: p.src || "" });
+      if (w) wordEntries.push({ word: w, src: p.src || "", en: p.en || "" });
     });
   });
   const unique = [];
@@ -962,8 +963,9 @@ function showQuizCard() {
   const item = deck[idx];
   window.__quizFlipped = false;
 
-  document.getElementById("q-word").textContent = item.word;
-  document.getElementById("q-src").textContent  = item.src ? "from: " + item.src : "";
+  document.getElementById("q-word").textContent  = item.word;
+  document.getElementById("q-src").textContent   = item.src  ? "from: " + item.src : "";
+  document.getElementById("q-expr").textContent  = item.en   ? '"' + item.en + '"'  : "";
   document.getElementById("q-hint").style.display = "block";
   document.getElementById("q-def").style.display  = "none";
   document.getElementById("q-ex").style.display   = "none";

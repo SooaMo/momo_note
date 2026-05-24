@@ -378,13 +378,16 @@ input[type="file"] {
 
 .toggle-btn {
   font-size: 0.8125rem;
-  padding: 0.25rem 0.75rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
   border-radius: 12px;
   border: 1px solid #ddd;
   background: transparent;
   color: #888;
   cursor: pointer;
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
 }
 
 .toggle-btn:hover {
@@ -405,13 +408,16 @@ input[type="file"] {
 
 .del-btn {
   font-size: 0.8125rem;
-  padding: 0.25rem 0.625rem;
+  height: 1.875rem;
+  padding: 0 0.625rem;
   border: 1px solid #ddd;
   background: transparent;
   color: #888;
   cursor: pointer;
   border-radius: 12px;
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
 }
 
 .del-btn:hover {
@@ -1858,6 +1864,13 @@ mark.word-highlight:hover {
 .quiz-card-src {
   font-size: 0.75rem;
   color: #ccc;
+}
+
+.quiz-card-expr {
+  font-size: 0.75rem;
+  color: #ccc;
+  font-style: italic;
+  margin-top: 2px;
 }
 
 .quiz-card-def {
