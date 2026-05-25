@@ -141,11 +141,13 @@ window.lookupWord = async (e, word, postId) => {
     const data     = await res.json();
     const entry    = data[0];
     const phonetic = entry.phonetics?.find(ph => ph.text)?.text || "";
+    const audioUrl = entry.phonetics?.find(ph => ph.audio)?.audio || "";
 
     let html = `
       <div class="def-header">
         <span class="def-word">${esc(word)}</span>
         ${phonetic ? `<span class="def-phonetic">${esc(phonetic)}</span>` : ""}
+        ${audioUrl ? `<button class="def-audio-btn" onclick="playAudio('${audioUrl}')" title="발음 듣기">🔊</button>` : ""}
         <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
         <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
       </div>`;
@@ -179,6 +181,11 @@ window.closeDefPanel = (postId) => {
   panel.style.display = "none";
   panel.dataset.word  = "";
   document.querySelectorAll(".word-tag-label").forEach(el => el.classList.remove("word-tag-active"));
+};
+
+window.playAudio = (url) => {
+  const audio = new Audio(url);
+  audio.play().catch(() => {});
 };
 
 /* ── 문장 내 하이라이트 단어 클릭 → unknown words 섹션 열고 뜻 표시 ── */
@@ -224,10 +231,12 @@ window.lookupWordInline = async (e, word, postId) => {
     const data     = await res.json();
     const entry    = data[0];
     const phonetic = entry.phonetics?.find(ph => ph.text)?.text || "";
+    const audioUrl = entry.phonetics?.find(ph => ph.audio)?.audio || "";
     let html = `
       <div class="def-header">
         <span class="def-word">${esc(word)}</span>
         ${phonetic ? `<span class="def-phonetic">${esc(phonetic)}</span>` : ""}
+        ${audioUrl ? `<button class="def-audio-btn" onclick="playAudio('${audioUrl}')" title="발음 듣기">🔊</button>` : ""}
         <a class="def-google-link" href="${googleUrl}" target="_blank" rel="noopener">Google ↗</a>
         <button class="def-close" onclick="closeDefPanel(${postId})">✕</button>
       </div>`;
