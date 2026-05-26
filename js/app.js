@@ -876,33 +876,33 @@ window.closeSidebar = () => {
         <button class="quiz-modal-close" onclick="closeQuizModal()">✕</button>
       </div>
       <div class="quiz-modal-body" id="quiz-body">
+
         <div class="quiz-start-screen" id="quiz-start">
           <div class="quiz-start-info" id="quiz-start-info"></div>
-          <button class="quiz-start-btn" onclick="startQuiz()">Start Quiz</button>
+          <button class="quiz-start-btn" id="quiz-start-btn" onclick="startQuiz()">Start Quiz</button>
         </div>
+
+        <div id="quiz-loading" style="display:none">
+          <div class="quiz-loading-msg">Loading word data…</div>
+          <div class="quiz-loading-bar-wrap"><div class="quiz-loading-bar" id="q-load-bar"></div></div>
+        </div>
+
         <div id="quiz-game" style="display:none">
           <div class="quiz-prog-row">
             <div class="quiz-prog-wrap"><div class="quiz-prog-fill" id="q-prog-fill"></div></div>
             <span class="quiz-prog-text" id="q-prog-text"></span>
           </div>
-          <div class="quiz-card" id="q-card" onclick="flipQuizCard()">
-            <span class="quiz-card-hint" id="q-hint">tap to reveal</span>
-            <div class="quiz-card-word" id="q-word"></div>
-            <div class="quiz-card-src"  id="q-src"></div>
-            <div class="quiz-card-expr" id="q-expr"></div>
-            <div class="quiz-card-def"  id="q-def"  style="display:none"></div>
-            <div class="quiz-card-ex"   id="q-ex"   style="display:none"></div>
-          </div>
-          <div class="quiz-actions" id="q-actions">
-            <button class="quiz-btn-reveal" onclick="flipQuizCard()">Reveal</button>
-          </div>
+          <div class="quiz-card" id="q-card"></div>
         </div>
+
         <div id="quiz-result" style="display:none">
           <div class="quiz-result-score" id="q-score"></div>
           <div class="quiz-result-label" id="q-label"></div>
           <div class="quiz-result-stats" id="q-stats"></div>
+          <div id="q-result-list"></div>
           <button class="quiz-start-btn" onclick="startQuiz()">Shuffle &amp; Try Again</button>
         </div>
+
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -915,26 +915,29 @@ window.openQuizModal = () => {
   (all || []).forEach(p => {
     if (p.status === "known") return;
     (p.unknownWords || []).forEach(w => {
-      if (w) wordEntries.push({ word: w, src: p.src || "", en: p.en || "" });
+      if (w && w.trim()) wordEntries.push({ word: w.trim(), src: p.src || "", en: p.en || "" });
     });
   });
   const unique = [];
-  const seen   = new Set();
+  const seen = new Set();
   wordEntries.forEach(e => {
     const key = e.word.toLowerCase();
     if (!seen.has(key)) { seen.add(key); unique.push(e); }
   });
-  window.__quizWords = unique;
+  window.__quizAllWords = unique;
 
-  const info  = document.getElementById("quiz-start-info");
-  const total = unique.length;
-  info.textContent = total
-    ? `${total} word${total > 1 ? "s" : ""} from unknown posts · ${Math.min(total, 10)} per round`
-    : "No unknown words yet. Add words to your posts first!";
+  const info = document.getElementById("quiz-start-info");
+  info.textContent = unique.length
+    ? `${unique.length} word${unique.length>1?'s':''} ready · dictionary check on start`
+    : "아직 unknown words가 없어요.";
 
-  document.getElementById("quiz-start").style.display  = "block";
-  document.getElementById("quiz-game").style.display   = "none";
-  document.getElementById("quiz-result").style.display = "none";
+  const btn = document.getElementById("quiz-start-btn");
+  if (btn) btn.disabled = unique.length === 0;
+
+  document.getElementById("quiz-start").style.display   = "block";
+  document.getElementById("quiz-loading").style.display = "none";
+  document.getElementById("quiz-game").style.display    = "none";
+  document.getElementById("quiz-result").style.display  = "none";
   document.getElementById("quiz-modal").classList.add("open");
 };
 
@@ -951,93 +954,177 @@ function shuffleArr(arr) {
   return a;
 }
 
-window.startQuiz = () => {
-  const words = window.__quizWords || [];
-  if (!words.length) return;
-  window.__quizDeck    = shuffleArr(words).slice(0, 10);
-  window.__quizIdx     = 0;
-  window.__quizKnew    = 0;
-  window.__quizNope    = 0;
-  window.__quizFlipped = false;
+async function fetchDef(word) {
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const entry = data[0];
+    const m = entry?.meanings?.[0];
+    if (!m) return null;
+    const d = m.definitions?.[0];
+    if (!d?.definition) return null;
+    return {
+      pos:      m.partOfSpeech || "",
+      def:      d.definition,
+      example:  d.example || "",
+      audio:    entry.phonetics?.find(p => p.audio)?.audio || "",
+      phonetic: entry.phonetics?.find(p => p.text)?.text  || ""
+    };
+  } catch { return null; }
+}
 
-  document.getElementById("quiz-start").style.display  = "none";
-  document.getElementById("quiz-result").style.display = "none";
-  document.getElementById("quiz-game").style.display   = "block";
-  showQuizCard();
+window.startQuiz = async () => {
+  const all = shuffleArr(window.__quizAllWords || []);
+  if (!all.length) return;
+
+  document.getElementById("quiz-start").style.display   = "none";
+  document.getElementById("quiz-result").style.display  = "none";
+  document.getElementById("quiz-loading").style.display = "block";
+  document.getElementById("quiz-game").style.display    = "none";
+
+  const bar = document.getElementById("q-load-bar");
+  const valid = [];
+  for (let i = 0; i < all.length && valid.length < 10; i++) {
+    bar.style.width = Math.round((i + 1) / Math.min(all.length, 30) * 100) + "%";
+    const defData = await fetchDef(all[i].word);
+    if (defData) valid.push({ ...all[i], ...defData });
+  }
+
+  if (!valid.length) {
+    document.getElementById("quiz-loading").style.display = "none";
+    document.getElementById("quiz-start").style.display   = "block";
+    document.getElementById("quiz-start-info").textContent = "No words found in dictionary. Try adding more unknown words!";
+    return;
+  }
+
+  window.__quizDeck    = valid;
+  window.__quizIdx     = 0;
+  window.__quizLog     = [];
+
+  document.getElementById("quiz-loading").style.display = "none";
+  document.getElementById("quiz-game").style.display    = "block";
+  renderQuizCard();
 };
 
-function showQuizCard() {
+function pickQuizType() {
+  return Math.random() < 0.5 ? "word2def" : "def2word";
+}
+
+function makeChoices(correctWord, correctDef, allWords, type) {
+  const others = shuffleArr(allWords.filter(w => w.word.toLowerCase() !== correctWord.toLowerCase()));
+  if (type === "def2word") {
+    const opts = [correctWord, ...others.slice(0, 3).map(w => w.word)];
+    return shuffleArr(opts);
+  } else {
+    const opts = [correctDef, ...others.slice(0, 3).map(w => w.def)];
+    return shuffleArr(opts);
+  }
+}
+
+function renderQuizCard() {
   const deck = window.__quizDeck;
   const idx  = window.__quizIdx;
   const item = deck[idx];
-  window.__quizFlipped = false;
-
-  document.getElementById("q-word").textContent  = item.word;
-  document.getElementById("q-src").textContent   = item.src  ? "from: " + item.src : "";
-  document.getElementById("q-expr").textContent  = item.en   ? '"' + item.en + '"'  : "";
-  document.getElementById("q-hint").style.display = "block";
-  document.getElementById("q-def").style.display  = "none";
-  document.getElementById("q-ex").style.display   = "none";
-  document.getElementById("q-def").textContent    = "";
-  document.getElementById("q-ex").textContent     = "";
+  const type = pickQuizType();
+  item._type = type;
 
   const pct = Math.round((idx + 1) / deck.length * 100);
-  document.getElementById("q-prog-fill").style.width = pct + "%";
-  document.getElementById("q-prog-text").textContent = (idx + 1) + " / " + deck.length;
-  document.getElementById("q-actions").innerHTML =
-    `<button class="quiz-btn-reveal" onclick="flipQuizCard()">Reveal</button>`;
+  document.getElementById("q-prog-fill").style.width  = pct + "%";
+  document.getElementById("q-prog-text").textContent  = (idx + 1) + " / " + deck.length;
 
-  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(item.word)}`)
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      if (!data) return;
-      const m = data[0]?.meanings?.[0];
-      if (!m) return;
-      const d = m.definitions?.[0];
-      window.__quizDeck[idx]._def = (m.partOfSpeech ? "(" + m.partOfSpeech + ") " : "") + (d?.definition || "");
-      window.__quizDeck[idx]._ex  = d?.example || "";
-    })
-    .catch(() => {});
+  const choices = makeChoices(item.word, item.def, deck, type);
+  const choicesHtml = choices.map(c => {
+    const safe = c.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    return `<button class="quiz-choice" onclick="quizPick(this,'${safe}')">${c}</button>`;
+  }).join("");
+
+  let questionHtml = "";
+
+  if (type === "word2def") {
+    questionHtml = `
+      <div class="quiz-q-label">Choose the correct meaning of this word</div>
+      <div class="quiz-big-word">${item.word}</div>
+      <div class="quiz-q-src">${item.src ? "from: " + item.src : ""}</div>`;
+  } else {
+    questionHtml = `
+      <div class="quiz-q-label">Which word matches this definition?</div>
+      <div class="quiz-def-question">${item.def}</div>
+      <div class="quiz-q-src">${item.src ? "from: " + item.src : ""}</div>`;
+  }
+
+  document.getElementById("q-card").innerHTML = `
+    ${questionHtml}
+    <div class="quiz-choices" id="q-choices">${choicesHtml}</div>
+    <div id="q-feedback"></div>`;
+
+  item._choices = choices;
+  item._correct = type === "def2word" ? item.word : item.def;
 }
 
-window.flipQuizCard = () => {
-  if (window.__quizFlipped) return;
-  window.__quizFlipped = true;
+window.quizPick = (btn, val) => {
+  const deck = window.__quizDeck;
   const idx  = window.__quizIdx;
-  const item = window.__quizDeck[idx];
-  document.getElementById("q-hint").style.display = "none";
-  document.getElementById("q-def").style.display  = "block";
-  document.getElementById("q-def").textContent    = item._def || "(definition loading…)";
-  if (item._ex) {
-    document.getElementById("q-ex").style.display = "block";
-    document.getElementById("q-ex").textContent   = '"' + item._ex + '"';
-  }
-  document.getElementById("q-actions").innerHTML = `
-    <button class="quiz-btn-nope" onclick="quizAnswer(false)">Still learning</button>
-    <button class="quiz-btn-knew" onclick="quizAnswer(true)">Got it!</button>`;
-};
+  const item = deck[idx];
+  const correct = item._correct;
+  const isCorrect = val === correct;
 
-window.quizAnswer = (gotIt) => {
-  if (gotIt) window.__quizKnew++; else window.__quizNope++;
-  window.__quizIdx++;
-  if (window.__quizIdx >= window.__quizDeck.length) {
-    showQuizResult();
-  } else {
-    showQuizCard();
-  }
+  document.querySelectorAll(".quiz-choice").forEach(b => {
+    const bVal = b.textContent;
+    if (bVal === correct)        b.classList.add("quiz-choice-correct");
+    else if (b === btn && !isCorrect) b.classList.add("quiz-choice-wrong");
+    b.disabled = true;
+  });
+
+  document.getElementById("q-feedback").innerHTML = isCorrect
+    ? `<div class="quiz-fb quiz-fb-correct">Correct!</div>`
+    : `<div class="quiz-fb quiz-fb-wrong">Not quite — answer: <strong>${correct}</strong></div>`;
+
+  window.__quizLog.push({ word: item.word, def: item.def, src: item.src, correct: isCorrect });
+
+  setTimeout(() => {
+    window.__quizIdx++;
+    if (window.__quizIdx >= deck.length) showQuizResult();
+    else renderQuizCard();
+  }, 1200);
 };
 
 function showQuizResult() {
-  const knew  = window.__quizKnew;
-  const total = window.__quizDeck.length;
+  const log   = window.__quizLog;
+  const total = log.length;
+  const knew  = log.filter(l => l.correct).length;
   const pct   = Math.round(knew / total * 100);
+
   document.getElementById("quiz-game").style.display   = "none";
   document.getElementById("quiz-result").style.display = "block";
   document.getElementById("q-score").textContent       = pct + "%";
-  document.getElementById("q-label").textContent       = `${knew} / ${total} words correct`;
+  document.getElementById("q-label").textContent       = `${knew} / ${total} correct`;
   document.getElementById("q-stats").innerHTML =
-    `<span class="quiz-stat-knew">Got it: ${knew}</span>
-     <span class="quiz-stat-nope">Still learning: ${window.__quizNope}</span>`;
+    `<span class="quiz-stat-knew">Correct: ${knew}</span>
+     <span class="quiz-stat-nope">Wrong: ${total - knew}</span>`;
   document.getElementById("q-prog-fill").style.width  = "100%";
   document.getElementById("q-prog-text").textContent  = total + " / " + total;
+
+  const correct = log.filter(l =>  l.correct);
+  const wrong   = log.filter(l => !l.correct);
+
+  let listHtml = "";
+  if (correct.length) {
+    listHtml += `<div class="quiz-result-section-label quiz-label-correct">✓ Got it (${correct.length})</div>`;
+    listHtml += correct.map(l => `
+      <div class="quiz-result-item quiz-result-item-correct">
+        <span class="quiz-result-word">${l.word}</span>
+        <span class="quiz-result-def">${l.def}</span>
+      </div>`).join("");
+  }
+  if (wrong.length) {
+    listHtml += `<div class="quiz-result-section-label quiz-label-wrong">✗ Still learning (${wrong.length})</div>`;
+    listHtml += wrong.map(l => `
+      <div class="quiz-result-item quiz-result-item-wrong">
+        <span class="quiz-result-word">${l.word}</span>
+        <span class="quiz-result-def">${l.def}</span>
+      </div>`).join("");
+  }
+
+  document.getElementById("q-result-list").innerHTML = listHtml;
 }
