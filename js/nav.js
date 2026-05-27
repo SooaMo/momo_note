@@ -6,6 +6,7 @@ let _calData = {};
 export function getNavFilter() { return navFilter; }
 
 export function renderNav(filteredPosts) {
+  const isScrp = window.location.pathname.toLowerCase().includes("scrapbook");
   const tree = {};
   const countMap = {};
 
@@ -22,8 +23,9 @@ export function renderNav(filteredPosts) {
 
   let html = "";
 
+  const allLabel  = isScrp ? "Timeline" : "All";
   const allActive = navFilter === null ? "nav-active" : "";
-  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">All</div>`;
+  html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">${allLabel}</div>`;
 
   Object.keys(tree).sort((a, b) => b - a).forEach(y => {
     const yKey    = `y${y}`;
@@ -76,20 +78,59 @@ export function renderNav(filteredPosts) {
 
   document.getElementById("nav-tree").innerHTML = html;
 
-  // Language switcher + Quiz button
+  // Page switcher tabs + bottom links
   const currentPage = window.location.pathname;
-  const isEng = !currentPage.toLowerCase().includes("french");
-  const basePath = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
+  const isEng       = !currentPage.toLowerCase().includes("french");
+  const basePath    = currentPage.substring(0, currentPage.lastIndexOf("/") + 1);
+
+  // Inject page-switcher tabs right after sidebar-header if not already there
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar && !document.getElementById("page-switcher")) {
+    const switcherEl = document.createElement("div");
+    switcherEl.id = "page-switcher";
+    switcherEl.className = "page-switcher";
+    switcherEl.innerHTML = `
+      <div class="page-tab-wrap ${!isScrp ? "page-tab-active" : ""}">
+        <button class="page-tab page-tab-words" onclick="toggleWordsDropdown(event)">
+          Words <span class="page-tab-arrow">▾</span>
+        </button>
+        <div class="words-dropdown" id="words-dropdown" style="display:none">
+          <a href="${basePath}index.html"  class="words-dropdown-item ${isEng  ? "words-dropdown-active" : ""}">🇬🇧 English</a>
+          <a href="${basePath}French.html" class="words-dropdown-item ${!isEng ? "words-dropdown-active" : ""}">🇫🇷 Français</a>
+        </div>
+      </div>
+      <a href="${basePath}scrapbook.html" class="page-tab ${isScrp ? "page-tab-active" : ""}">Scrapbook</a>
+    `;
+    const header = sidebar.querySelector(".sidebar-header");
+    if (header && header.nextSibling) {
+      sidebar.insertBefore(switcherEl, header.nextSibling);
+    }
+  }
+
   const switcher = document.getElementById("lang-switcher");
   if (switcher) {
     switcher.innerHTML = `
-      <button class="quiz-nav-btn" onclick="openQuizModal()">🎯 Word Quiz</button>
-      <div class="lang-switcher-divider"></div>
-      <a href="${basePath}index.html"  class="${isEng  ? "lang-active" : ""}">🇬🇧 English</a>
-      <a href="${basePath}French.html" class="${!isEng ? "lang-active" : ""}">🇫🇷 Français</a>
+      ${!isScrp ? `<button class="quiz-nav-btn" onclick="openQuizModal()">🎯 Word Quiz</button>` : ""}
     `;
   }
 }
+
+window.toggleWordsDropdown = (e) => {
+  e.stopPropagation();
+  const dd = document.getElementById("words-dropdown");
+  if (!dd) return;
+  const isOpen = dd.style.display !== "none";
+  dd.style.display = isOpen ? "none" : "block";
+  // Close on outside click
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener("click", function handler() {
+        dd.style.display = "none";
+        document.removeEventListener("click", handler);
+      });
+    }, 0);
+  }
+};
 
 export function toggleNav(key) {
   const ch  = document.getElementById("ch-"  + key);

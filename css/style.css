@@ -2298,3 +2298,109 @@ mark.word-highlight:hover {
   color: var(--color-text-secondary);
   line-height: 1.5;
 }
+
+/* ══════════════════════════════
+   Page switcher tabs (Words / Scrapbook)
+══════════════════════════════ */
+.page-switcher {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e0ddd6;
+  background: #f5f2ed;
+}
+
+.page-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.375rem 0.5rem;
+  border-radius: 7px;
+  border: 0.5px solid transparent;
+  color: #aaa;
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.page-tab:hover {
+  background: #fff;
+  color: #555;
+}
+
+.page-tab-active {
+  background: #FDE8D8;
+  color: #D4621A;
+  border-color: #F5C4A3;
+}
+
+/* ══ Words dropdown ══ */
+.page-switcher {
+  position: relative;
+}
+
+.page-tab-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.page-tab-words {
+  width: 100%;
+  background: transparent;
+  border: 0.5px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.page-tab-wrap.page-tab-active .page-tab-words {
+  background: #FDE8D8;
+  color: #D4621A;
+  border-color: #F5C4A3;
+}
+
+.page-tab-arrow {
+  font-size: 0.625rem;
+  opacity: 0.7;
+}
+
+.words-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  background: #fff;
+  border: 0.5px solid #e0ddd6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.words-dropdown-item {
+  display: block;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #555;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.words-dropdown-item:hover {
+  background: #f5f2ed;
+  color: #333;
+}
+
+.words-dropdown-active {
+  background: #FDE8D8;
+  color: #D4621A;
+  font-weight: 500;
+}
+
+.words-dropdown-active:hover {
+  background: #f5c4a3;
+}

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MomoNote — Scrapbook</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="images/icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+  <meta name="theme-color" content="#FDE8D8" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/scrapbook.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">MomoNote</div>
+      <button id="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <div id="scrp-filter" class="scrp-filter-wrap">
+      <div class="scrp-filter-label">Template</div>
+      <div class="scrp-filter-item scrp-filter-active" data-tmpl="all"     onclick="setTmplFilter('all')">All</div>
+      <div class="scrp-filter-item" data-tmpl="diary"   onclick="setTmplFilter('diary')">📔 Diary</div>
+      <div class="scrp-filter-item" data-tmpl="review"  onclick="setTmplFilter('review')">🎬 Review</div>
+      <div class="scrp-filter-item" data-tmpl="travel"  onclick="setTmplFilter('travel')">✈️ Travel</div>
+      <div class="scrp-filter-item" data-tmpl="music"   onclick="setTmplFilter('music')">🎵 Music</div>
+      <div class="scrp-filter-item" data-tmpl="workout" onclick="setTmplFilter('workout')">💪 Workout</div>
+      <div class="scrp-filter-item" data-tmpl="idea"    onclick="setTmplFilter('idea')">💡 Idea</div>
+    </div>
+    <div id="nav-tree"></div>
+    <div id="lang-switcher" class="lang-switcher"></div>
+  </div>
+
+  <div id="main">
+    <div class="content-wrap">
+
+      <div id="timeline-header">
+        <button id="nav-toggle-btn" onclick="openSidebar()">☰ Menu</button>
+        <span id="header-logo">Scrapbook</span>
+        <button class="scrp-new-btn" onclick="openScrpCompose()">＋ New</button>
+      </div>
+
+      <div id="timeline"></div>
+
+    </div>
+  </div>
+</div>
+
+<button id="fab" onclick="openScrpCompose()">＋</button>
+
+<!-- Compose modal -->
+<div id="scrp-compose-modal">
+  <div class="modal-box scrp-modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="scrp-modal-title">New Entry</span>
+      <button class="modal-close" onclick="closeScrpCompose()">✕</button>
+    </div>
+    <div class="modal-body" id="scrp-modal-body">
+
+      <!-- Step 1: Template selection -->
+      <div id="scrp-step-tmpl">
+        <div class="scrp-tmpl-hint">Choose a template</div>
+        <div class="scrp-tmpl-grid">
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('diary')">
+            <span class="scrp-tmpl-icon">📔</span>
+            <span class="scrp-tmpl-name">Diary</span>
+            <span class="scrp-tmpl-desc">Date · weather · mood · title · entry</span>
+          </button>
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('review')">
+            <span class="scrp-tmpl-icon">🎬</span>
+            <span class="scrp-tmpl-name">Review</span>
+            <span class="scrp-tmpl-desc">Title · start~end date · rating · notes</span>
+          </button>
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('travel')">
+            <span class="scrp-tmpl-icon">✈️</span>
+            <span class="scrp-tmpl-name">Travel</span>
+            <span class="scrp-tmpl-desc">Place · photos · cost · food · notes</span>
+          </button>
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('music')">
+            <span class="scrp-tmpl-icon">🎵</span>
+            <span class="scrp-tmpl-name">Music</span>
+            <span class="scrp-tmpl-desc">Album · artist · rating · notes</span>
+          </button>
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('workout')">
+            <span class="scrp-tmpl-icon">💪</span>
+            <span class="scrp-tmpl-name">Workout</span>
+            <span class="scrp-tmpl-desc">Type · duration · condition · notes</span>
+          </button>
+          <button class="scrp-tmpl-opt" onclick="selectTmpl('idea')">
+            <span class="scrp-tmpl-icon">💡</span>
+            <span class="scrp-tmpl-name">Idea</span>
+            <span class="scrp-tmpl-desc">Title · category · idea · next action</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Form (injected by JS) -->
+      <div id="scrp-step-form" style="display:none"></div>
+
+    </div>
+    <div class="modal-footer" id="scrp-modal-footer" style="display:none">
+      <button class="btn-cancel" onclick="backToTmplStep()">← Back</button>
+      <button class="btn-post" id="scrp-btn-post">Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="scrp-edit-modal">
+  <div class="modal-box scrp-modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Edit Entry</span>
+      <button class="modal-close" onclick="closeScrpEdit()">✕</button>
+    </div>
+    <input type="hidden" id="scrp-edit-id" />
+    <div class="modal-body" id="scrp-edit-body"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeScrpEdit()">Cancel</button>
+      <button class="btn-post" id="scrp-btn-edit-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>window.__LANG_COL__ = "scrapbook_posts";</script>
+<script type="module" src="js/scrapbook.js"></script>
+</body>
+</html>
