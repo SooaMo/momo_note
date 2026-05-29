@@ -661,10 +661,15 @@ const FORM_MAP = { diary:diaryForm, review:reviewForm, travel:travelForm, music:
 /* ══ Image handling ══ */
 let _pendingImgs=[];
 window.addImgs=(input)=>{
-  [...input.files].slice(0,5-_pendingImgs.length).forEach(file=>{
+  const files=[...input.files].slice(0, 5-_pendingImgs.length);
+  const readers = files.map(file => new Promise(resolve => {
     const r=new FileReader();
-    r.onload=e=>{_pendingImgs.push({data:e.target.result,caption:""});refreshImgPreviews();};
+    r.onload=e=>resolve({ data:e.target.result, caption:"" });
     r.readAsDataURL(file);
+  }));
+  Promise.all(readers).then(results=>{
+    _pendingImgs.push(...results);
+    refreshImgPreviews();
   });
   input.value="";
 };
@@ -688,24 +693,67 @@ window.setScrpStar=(n)=>{
 };
 
 /* ══ Build post — 9. uses currentEditId to prevent cross-post pollution ══ */
+// keep(id, fallback): use form value if non-empty, else keep existing
+function keep(id, fallback) { const v = val(id); return v !== "" ? v : (fallback ?? ""); }
+
 function buildPost(tmpl, existing={}) {
   const base={ id:existing.id||Date.now(), ts:existing.ts||new Date().toISOString(), tmpl, comments:existing.comments||[] };
   if (tmpl==="diary") {
-    const isPrivate = document.getElementById("f-private")?.checked || false;
-    if (isPrivate && !isPinSet()) {
-      const pinInput = val("f-pin");
-      if (pinInput) setPin(pinInput);
-    }
-    return { ...base, date:val("f-date"), weather:val("f-weather"), mood:val("f-mood"), title:val("f-title"), body:val("f-body"), isPrivate };
+    const isPrivate = document.getElementById("f-private")?.checked ?? existing.isPrivate ?? false;
+    if (isPrivate && !isPinSet()) { const p=val("f-pin"); if(p) setPin(p); }
+    return { ...base,
+      date:      keep("f-date",     existing.date),
+      weather:   keep("f-weather",  existing.weather),
+      mood:      keep("f-mood",     existing.mood),
+      title:     keep("f-title",    existing.title),
+      body:      keep("f-body",     existing.body),
+      isPrivate
+    };
   }
-  if (tmpl==="review")  return { ...base, tag:val("f-tag"), title:val("f-title"), source:val("f-source"), startDate:val("f-startDate"), endDate:val("f-endDate"), rating:_scrpStarVal, quote:val("f-quote"), body:val("f-body") };
+  if (tmpl==="review") return { ...base,
+    tag:       keep("f-tag",       existing.tag),
+    title:     keep("f-title",     existing.title),
+    source:    keep("f-source",    existing.source),
+    startDate: keep("f-startDate", existing.startDate),
+    endDate:   keep("f-endDate",   existing.endDate),
+    rating:    _scrpStarVal || existing.rating || 0,
+    quote:     keep("f-quote",     existing.quote),
+    body:      keep("f-body",      existing.body)
+  };
   if (tmpl==="travel") {
     document.querySelectorAll(".scrp-img-caption-inp").forEach((inp,i)=>{if(_pendingImgs[i])_pendingImgs[i].caption=inp.value;});
-    return { ...base, place:val("f-place"), location:val("f-location"), startDate:val("f-startDate"), endDate:val("f-endDate"), cost:val("f-cost"), images:[..._pendingImgs], body:val("f-body") };
+    return { ...base,
+      place:     keep("f-place",     existing.place),
+      location:  keep("f-location",  existing.location),
+      startDate: keep("f-startDate", existing.startDate),
+      endDate:   keep("f-endDate",   existing.endDate),
+      cost:      keep("f-cost",      existing.cost),
+      images:    _pendingImgs.length ? [..._pendingImgs] : (existing.images||[]),
+      body:      keep("f-body",      existing.body)
+    };
   }
-  if (tmpl==="music")   return { ...base, title:val("f-title"), artist:val("f-artist"), rating:_scrpStarVal, ytLink:val("f-ytLink"), body:val("f-body") };
-  if (tmpl==="workout") return { ...base, date:val("f-date"), workoutType:val("f-workoutType"), duration:val("f-duration"), exercises:[..._exercises], condition:val("f-condition"), body:val("f-body") };
-  if (tmpl==="idea")    return { ...base, title:val("f-title"), category:val("f-category"), priority:val("f-priority"), body:val("f-body"), nextAction:val("f-nextAction") };
+  if (tmpl==="music") return { ...base,
+    title:  keep("f-title",  existing.title),
+    artist: keep("f-artist", existing.artist),
+    rating: _scrpStarVal || existing.rating || 0,
+    ytLink: keep("f-ytLink", existing.ytLink),
+    body:   keep("f-body",   existing.body)
+  };
+  if (tmpl==="workout") return { ...base,
+    date:        keep("f-date",        existing.date),
+    workoutType: keep("f-workoutType", existing.workoutType),
+    duration:    keep("f-duration",    existing.duration),
+    exercises:   _exercises.length ? [..._exercises] : (existing.exercises||[]),
+    condition:   keep("f-condition",   existing.condition),
+    body:        keep("f-body",        existing.body)
+  };
+  if (tmpl==="idea") return { ...base,
+    title:      keep("f-title",      existing.title),
+    category:   keep("f-category",   existing.category),
+    priority:   keep("f-priority",   existing.priority),
+    body:       keep("f-body",       existing.body),
+    nextAction: keep("f-nextAction", existing.nextAction)
+  };
   return base;
 }
 

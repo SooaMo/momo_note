@@ -367,6 +367,7 @@ document.getElementById("mob-compose-modal").addEventListener("click", e => {
 document.querySelectorAll(".filter-tab").forEach(btn => {
   btn.addEventListener("click", () => {
     filter = btn.dataset.filter;
+    _shownCount = INIT_SIZE;
     document.querySelectorAll(".filter-tab").forEach(b =>
       b.classList.toggle("active", b.dataset.filter === filter)
     );
@@ -663,6 +664,10 @@ function applyNavFilter(posts) {
 /* ══════════════════════════════
    Timeline render
 ══════════════════════════════ */
+let _shownCount = 20;
+const PAGE_SIZE = 10;
+const INIT_SIZE = 20;
+
 function renderTimeline(filteredPosts) {
   const timeline = document.getElementById("timeline");
   const posts    = applyNavFilter(filteredPosts);
@@ -687,10 +692,25 @@ function renderTimeline(filteredPosts) {
     return;
   }
 
+  // Flatten sorted posts for pagination
+  const allSorted = Object.keys(groups).sort((a,b) => b>a?1:-1)
+    .flatMap(key => groups[key].items);
+  const visible   = allSorted.slice(0, _shownCount);
+  const remaining = allSorted.length - _shownCount;
+
+  // Rebuild groups from visible slice only
+  const visGroups = {};
+  visible.forEach(p => {
+    const { y, m, day } = getDateKey(p.ts);
+    const key = y + "-" + String(m).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+    if (!visGroups[key]) visGroups[key] = { y, m, day, items: [] };
+    visGroups[key].items.push(p);
+  });
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   let html = "";
-  Object.keys(groups).sort((a, b) => b > a ? 1 : -1).forEach(key => {
-    const g     = groups[key];
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  Object.keys(visGroups).sort((a,b) => b>a?1:-1).forEach(key => {
+    const g     = visGroups[key];
     const label = months[g.m - 1] + " " + String(g.day).padStart(2,"0") + ", " + g.y;
     html += `<div class="date-anchor" id="anchor-${key}">${label}</div>`;
 
@@ -730,8 +750,24 @@ function renderTimeline(filteredPosts) {
     });
   });
 
+  // More button
+  if (remaining > 0) {
+    html += `<div class="load-more-wrap">
+      <button class="load-more-btn" onclick="showMore()">
+        Show ${Math.min(remaining, PAGE_SIZE)} more
+        <span class="load-more-count">(${remaining} remaining)</span>
+      </button>
+    </div>`;
+  }
+
   timeline.innerHTML = html;
 }
+
+window.showMore = () => {
+  _shownCount += PAGE_SIZE;
+  render();
+  // keep scroll position roughly stable
+};
 
 /* ══════════════════════════════
    Global handlers
