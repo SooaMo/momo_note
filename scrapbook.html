@@ -66,16 +66,16 @@
               <circle cx="17" cy="17" r="2"/>
             </svg>
           </button>
-        </div>
 
-        <!-- Tracklist panel (drops below header) -->
-        <div class="mp-tracklist-panel" id="mp-tracklist-panel">
-          <div class="mp-tl-header">
-            <span class="mp-tl-title" id="mp-tl-title">Playlist</span>
-            <span class="mp-tl-cat" id="mp-tl-cat"></span>
-            <button class="mp-tl-close" onclick="mpToggleTracklist()">✕</button>
+          <!-- Tracklist panel — inside mp-bar so it aligns with it -->
+          <div class="mp-tracklist-panel" id="mp-tracklist-panel">
+            <div class="mp-tl-header">
+              <span class="mp-tl-title" id="mp-tl-title">Playlist</span>
+              <span class="mp-tl-cat" id="mp-tl-cat"></span>
+              <button class="mp-tl-close" onclick="mpToggleTracklist()">✕</button>
+            </div>
+            <div class="mp-tl-tracks" id="mp-tl-tracks"></div>
           </div>
-          <div class="mp-tl-tracks" id="mp-tl-tracks"></div>
         </div>
 
         <!-- Logo: center on both desktop and mobile -->

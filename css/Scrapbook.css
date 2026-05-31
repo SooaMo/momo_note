@@ -272,7 +272,8 @@
   margin: 0 10px;
   background: #fff;
   height: 32px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 .mp-note { font-size: 13px; flex-shrink: 0; }
 
@@ -790,9 +791,10 @@
 .mp-tracklist-panel {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  width: 300px;
+  width: 100%;
+  min-width: 260px;
   background: #fff;
   border: 1px solid #E8C9B5;
   border-radius: 12px;
