@@ -1180,3 +1180,207 @@ function showQuizResult() {
 
   document.getElementById("q-result-list").innerHTML = listHtml;
 }
+
+/* ══════════════════════════════
+   Words page — bottom mini player
+   Reads playback state from localStorage (set by Scrapbook)
+══════════════════════════════ */
+const WP_KEY = "momonote_player";
+
+// State
+let _wpTracks = [], _wpCur = -1, _wpPlaying = false, _wpModeIdx = 0, _wpCollapsed = false, _wpTlOpen = false;
+
+const WP_MODES = [
+  { key:"repeat",  svg:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>' },
+  { key:"one",     svg:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/><rect x="8" y="8" width="8" height="9" rx="1" fill="white" stroke="none"/><text x="12" y="16" font-size="8" font-weight="bold" text-anchor="middle" fill="currentColor" stroke="none">1</text>' },
+  { key:"shuffle", svg:'<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>' }
+];
+
+const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Recommend", hmm:"🤔 Hmmm", bad:"👎 Bad" };
+const RATING_CLS   = { love:"wp-tl-r-love", like:"wp-tl-r-like", rec:"wp-tl-r-rec", hmm:"wp-tl-r-hmm", bad:"wp-tl-r-bad" };
+
+function wpEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function wpLoadState(){
+  try {
+    const raw = localStorage.getItem(WP_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function wpInit(){
+  const state = wpLoadState();
+  if (!state || !state.tracks || !state.tracks.length) return;
+  _wpTracks  = state.tracks;
+  _wpCur     = state.cur ?? 0;
+  _wpModeIdx = state.modeIdx ?? 0;
+
+  // populate cat select
+  const cats = [...new Set(["all", ...state.tracks.flatMap(t => t.categories || ["Favorite"])])];
+  const sel  = document.getElementById("wp-cat-select");
+  if (sel) {
+    sel.innerHTML = cats.map(c => `<option value="${wpEsc(c)}"${c === (state.cat||"Favorite") ? " selected" : ""}>${c === "all" ? "All" : wpEsc(c)}</option>`).join("");
+    _wpTracks = state.cat && state.cat !== "all"
+      ? state.tracks.filter(t => (t.categories||["Favorite"]).includes(state.cat))
+      : state.tracks;
+    _wpCur = Math.min(_wpCur, _wpTracks.length - 1);
+  }
+
+  wpUpdateBar();
+  wpSyncMode();
+}
+
+function wpUpdateBar(){
+  const text = (_wpCur >= 0 && _wpTracks.length)
+    ? `${_wpTracks[_wpCur].title || "?"} — ${_wpTracks[_wpCur].artist || ""}`
+    : "No music";
+  const ta = document.getElementById("wp-title-a");
+  const tb = document.getElementById("wp-title-b");
+  if (ta) ta.textContent = text;
+  if (tb) tb.textContent = text;
+  // also update mobile popup title
+  const mobTitle = document.getElementById("wp-mob-title");
+  if (mobTitle) mobTitle.textContent = text;
+  if (_wpTlOpen) wpRenderTracklist();
+}
+
+function wpSyncMode(){
+  const svg = document.getElementById("wp-mode-svg");
+  if (svg) svg.innerHTML = WP_MODES[_wpModeIdx].svg;
+}
+
+function wpSyncPlayBtn(){
+  const playSvg  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>';
+  const pauseSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>';
+  const b = document.getElementById("wp-play-btn");
+  if (b) { b.innerHTML = _wpPlaying ? pauseSvg : playSvg; b.classList.toggle('wp-play', !_wpPlaying); }
+}
+
+function wpPlay(){
+  if (_wpCur < 0 || !_wpTracks.length) return;
+  const ytId = _wpTracks[_wpCur].ytLink?.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)?.[1];
+  if (!ytId) return;
+  const vol = +(document.getElementById("wp-vol")?.value || 80);
+  const f = document.getElementById("wp-yt-frame");
+  f.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`;
+  _wpPlaying = true;
+  wpSyncPlayBtn();
+  wpUpdateBar();
+  f.onload = () => {
+    try { f.contentWindow.postMessage(JSON.stringify({event:"command",func:"setVolume",args:[vol]}),"*"); } catch{}
+  };
+}
+
+function wpStop(){
+  try { document.getElementById("wp-yt-frame").contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}','*'); } catch{}
+  document.getElementById("wp-yt-frame").src = "";
+  _wpPlaying = false;
+  wpSyncPlayBtn();
+}
+
+window.wpTogglePlay = () => { _wpPlaying ? wpStop() : wpPlay(); };
+
+window.wpNext = () => {
+  if (!_wpTracks.length) return;
+  const mode = WP_MODES[_wpModeIdx].key;
+  if (mode === "shuffle") _wpCur = Math.floor(Math.random() * _wpTracks.length);
+  else if (mode === "one") {}
+  else _wpCur = (_wpCur + 1) % _wpTracks.length;
+  if (_wpPlaying) wpPlay(); else wpUpdateBar();
+};
+
+window.wpPrev = () => {
+  if (!_wpTracks.length) return;
+  _wpCur = (_wpCur - 1 + _wpTracks.length) % _wpTracks.length;
+  if (_wpPlaying) wpPlay(); else wpUpdateBar();
+};
+
+window.wpCycleMode = () => {
+  _wpModeIdx = (_wpModeIdx + 1) % WP_MODES.length;
+  wpSyncMode();
+};
+
+window.wpSetVol = (v) => {
+  try { document.getElementById("wp-yt-frame").contentWindow.postMessage(JSON.stringify({event:"command",func:"setVolume",args:[v]}),"*"); } catch{}
+};
+
+window.wpChangeCat = (cat) => {
+  const state = wpLoadState();
+  if (!state) return;
+  _wpTracks = cat === "all" ? state.tracks : state.tracks.filter(t => (t.categories||["Favorite"]).includes(cat));
+  _wpCur = _wpTracks.length ? 0 : -1;
+  if (_wpPlaying) wpStop();
+  wpUpdateBar();
+  if (_wpTlOpen) wpRenderTracklist();
+  const el = document.getElementById("wp-tl-cat");
+  if (el) el.textContent = cat === "all" ? "All" : cat;
+};
+
+window.wpToggleCollapse = () => {
+  _wpCollapsed = !_wpCollapsed;
+  document.getElementById("words-player").classList.toggle("collapsed", _wpCollapsed);
+  if (_wpCollapsed && _wpTlOpen) {
+    _wpTlOpen = false;
+    document.getElementById("wp-tracklist").classList.remove("open");
+  }
+};
+
+window.wpToggleTracklist = () => {
+  _wpTlOpen = !_wpTlOpen;
+  const tl  = document.getElementById("wp-tracklist");
+  const btn = document.getElementById("wp-list-btn");
+  tl.classList.toggle("open", _wpTlOpen);
+  if (btn) btn.classList.toggle("active", _wpTlOpen);
+  if (_wpTlOpen) wpRenderTracklist();
+};
+
+window.wpJumpTo = (idx) => {
+  _wpCur = idx;
+  wpPlay();
+  wpRenderTracklist();
+};
+
+function wpRenderTracklist(){
+  const tracks = document.getElementById("wp-tl-tracks");
+  const catEl  = document.getElementById("wp-tl-cat");
+  const sel    = document.getElementById("wp-cat-select");
+  if (!tracks) return;
+  const curCat = sel?.value || "Favorite";
+  if (catEl) catEl.textContent = curCat === "all" ? "All" : curCat;
+  if (!_wpTracks.length) {
+    tracks.innerHTML = `<div class="wp-tl-empty">No tracks in this category</div>`;
+    return;
+  }
+  tracks.innerHTML = _wpTracks.map((t, i) => {
+    const isCur  = i === _wpCur;
+    const rLabel = t.rating ? (RATING_LABEL[t.rating] || "") : "";
+    const rCls   = t.rating ? (RATING_CLS[t.rating]   || "") : "";
+    return `<div class="wp-tl-row${isCur?" wp-playing":""}" onclick="wpJumpTo(${i})">
+      <span class="wp-tl-num">${isCur ? "▶" : (i+1)}</span>
+      <div class="wp-tl-info">
+        <div class="wp-tl-song">${wpEsc(t.title||"?")}</div>
+        <div class="wp-tl-artist">${wpEsc(t.artist||"")}</div>
+      </div>
+      ${rLabel ? `<span class="wp-tl-rating ${rCls}">${rLabel}</span>` : ""}
+    </div>`;
+  }).join("");
+}
+
+// Init on page load
+document.addEventListener("DOMContentLoaded", wpInit);
+
+/* ── Words player mobile popup ── */
+window.wpToggleMobPopup = () => {
+  const popup   = document.getElementById("wp-mob-popup");
+  const overlay = document.getElementById("wp-mob-overlay");
+  if (!popup) return;
+  const open = !popup.classList.contains("open");
+  popup.classList.toggle("open", open);
+  if(overlay) overlay.classList.toggle("open", open);
+  if (open) {
+    const d = document.getElementById("wp-cat-select");
+    const m = document.getElementById("wp-cat-select-mob");
+    if (d && m) m.value = d.value;
+  }
+};

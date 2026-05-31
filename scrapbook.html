@@ -55,7 +55,7 @@
           <button class="mp-icon-btn" id="mp-mode-btn" onclick="mpCycleMode()" title="Play mode">
             <svg id="mp-mode-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
           </button>
-          <input type="range" min="0" max="100" value="80" class="mp-vol" id="mp-vol" oninput="mpSetVol(+this.value)" title="Volume"/>
+          <input type="range" min="0" max="100" value="20" class="mp-vol" id="mp-vol" oninput="mpSetVol(+this.value)" title="Volume"/>
           <select class="mp-cat" id="mp-cat-select" onchange="changeMpCat(this.value)"></select>
           <button class="mp-list-btn" id="mp-list-btn" onclick="mpToggleTracklist()" title="Show track list">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -168,7 +168,7 @@
   </div>
   <div class="mp-pop-bottom">
     <select class="mp-cat" id="mp-cat-select-mob" onchange="changeMpCat(this.value)"></select>
-    <input type="range" min="0" max="100" value="80" class="mp-vol" id="mp-vol-mob" oninput="mpSetVol(+this.value)"/>
+    <input type="range" min="0" max="100" value="20" class="mp-vol" id="mp-vol-mob" oninput="mpSetVol(+this.value)"/>
   </div>
 </div>
 <div class="mp-overlay" id="mp-overlay" onclick="mpTogglePopup()"></div>

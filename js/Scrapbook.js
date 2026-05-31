@@ -529,6 +529,20 @@ const MP_MODES=[
   }
 ];
 
+const WP_KEY = "momonote_player";
+function wpSaveState(cat){
+  try {
+    const allTracks = posts.filter(p=>p.tmpl==="music"&&p.ytLink)
+      .map(p=>({title:p.title,artist:p.artist,ytLink:p.ytLink,rating:p.rating,categories:p.categories||[DEFAULT_MUSIC_CAT]}));
+    localStorage.setItem(WP_KEY, JSON.stringify({
+      tracks: allTracks,
+      cur:    _mpCur,
+      cat:    cat || document.getElementById("mp-cat-select")?.value || DEFAULT_MUSIC_CAT,
+      modeIdx:_mpModeIdx
+    }));
+  } catch {}
+}
+
 function getMusicTracks(cat){
   return posts.filter(p=>p.tmpl==="music"&&p.ytLink&&
     (cat==="all"||(p.categories||[DEFAULT_MUSIC_CAT]).includes(cat)));
@@ -552,6 +566,7 @@ function initMiniPlayer(){
   _mpTracks=getMusicTracks(cur);
   if(_mpCur<0&&_mpTracks.length)_mpCur=0;
   mpUpdateBar();
+  wpSaveState(cur);
 }
 
 /* ── bar text + marquee ── */
@@ -595,7 +610,7 @@ function mpPlay(){
   if(_mpCur<0||!_mpTracks.length)return;
   const ytId=_mpTracks[_mpCur].ytLink?.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)?.[1];
   if(!ytId)return;
-  const vol=+(document.getElementById("mp-vol")?.value||80);
+  const vol=+(document.getElementById("mp-vol")?.value||20);
   const f=document.getElementById("mp-yt-frame");
   f.src=`https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1`;
   _mpPlaying=true;
@@ -634,6 +649,7 @@ window.changeMpCat=(cat)=>{
   // sync both selects
   ["mp-cat-select","mp-cat-select-mob"].forEach(id=>{const s=document.getElementById(id);if(s)s.value=cat;});
   if(_tlOpen) mpRenderTracklist();
+  wpSaveState(cat);
 };
 window.mpCycleMode=()=>{
   _mpModeIdx=(_mpModeIdx+1)%MP_MODES.length;
@@ -699,7 +715,7 @@ function mpRenderTracklist() {
     return;
   }
 
-  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Good", hmm:"🤔 Hmmm", bad:"👎 Bad" };
+  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Recommend", hmm:"🤔 Hmmm", bad:"👎 Bad" };
   const RATING_CLS   = { love:"mp-tl-r-love", like:"mp-tl-r-like", rec:"mp-tl-r-rec", hmm:"mp-tl-r-hmm", bad:"mp-tl-r-bad" };
 
   tracks.innerHTML = _mpTracks.map((t, i) => {
