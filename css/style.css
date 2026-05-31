@@ -219,6 +219,7 @@ input[type="file"] {
   border-bottom: 1px solid #e0ddd6;
   background: #fff;
   flex-shrink: 0;
+  position: relative;
 }
 
 .filter-tabs {
@@ -240,6 +241,19 @@ input[type="file"] {
 .filter-tab:hover {
   border-color: #aaa;
   color: #555;
+}
+
+.filter-mob-select {
+  display: none;
+  font-size: 0.8125rem;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: #FDE8D8;
+  color: #D4621A;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: auto;
 }
 
 .filter-tab.active {
@@ -1280,6 +1294,7 @@ input[type="file"] {
   overflow-y: auto;
   width: 100%;
   transition: border-color 0.15s;
+  field-sizing: content; /* Auto height based on content (where supported) */
 }
 
 .compose-textarea:focus {
@@ -2437,4 +2452,59 @@ mark.word-highlight:hover {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   opacity: 0.7;
+}
+
+/* ══════════════════════════════
+   Responsive — 950px (Words page)
+══════════════════════════════ */
+@media (max-width: 950px) {
+  #sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0; bottom: 0;
+    z-index: 300;
+    width: 220px;
+    transition: left 0.25s ease;
+  }
+  #sidebar.open { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.12); }
+  #sidebar-overlay { display: none; }
+  #sidebar-overlay.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 299;
+  }
+  #main { width: 100% !important; margin-left: 0 !important; }
+  #nav-toggle-btn { display: flex !important; }
+
+  #compose .compose-grid { grid-template-columns: 1fr; }
+  #compose .src-input,
+  #compose .img-input,
+  #compose .full-row { grid-column: 1; }
+
+  .card-footer    { flex-wrap: wrap; gap: 6px; }
+  .card-time      { order: -1; width: 100%; }
+  .card-actions-right { margin-left: auto; }
+
+  #timeline-header { flex-wrap: nowrap; gap: 6px; padding: 8px 12px; }
+  .filter-tabs     { margin-left: auto; }
+}
+
+/* ══ Words — mobile (≤768px) ══ */
+@media (max-width: 768px) {
+  .filter-tabs          { display: none; }
+  .filter-mob-select    { display: block; margin-left: auto; }
+
+  .card-footer    { flex-wrap: wrap; gap: 6px; }
+  .card-time      { order: -1; width: 100%; }
+  .card-actions-right { margin-left: auto; }
+}
+
+@media (max-width: 600px) {
+  .card-en { font-size: 1.125rem; }
+  .toggle-btn .btn-text,
+  .edit-btn .btn-text,
+  .del-btn .btn-text { display: none; }
+  .toggle-btn, .edit-btn, .del-btn { padding: 0 8px; }
 }

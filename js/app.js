@@ -371,9 +371,25 @@ document.querySelectorAll(".filter-tab").forEach(btn => {
     document.querySelectorAll(".filter-tab").forEach(b =>
       b.classList.toggle("active", b.dataset.filter === filter)
     );
+    // sync mobile dropdown label
+    const mob = document.getElementById("filter-mob-select");
+    if (mob) mob.value = filter;
     render();
   });
 });
+
+// mobile dropdown → filter
+const filterMobSelect = document.getElementById("filter-mob-select");
+if (filterMobSelect) {
+  filterMobSelect.addEventListener("change", () => {
+    filter = filterMobSelect.value;
+    _shownCount = INIT_SIZE;
+    document.querySelectorAll(".filter-tab").forEach(b =>
+      b.classList.toggle("active", b.dataset.filter === filter)
+    );
+    render();
+  });
+}
 
 /* ══════════════════════════════
    Edit modal

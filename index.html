@@ -54,11 +54,18 @@
       <div id="timeline-header">
         <button id="nav-toggle-btn" onclick="openSidebar()">☰ Menu</button>
         <span id="header-logo" onclick="setNavFilter(null);scrollToTop()">MomoNote</span>
+        <!-- Desktop/tablet filter tabs -->
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="all">All</button>
           <button class="filter-tab" data-filter="unknown">Unknown</button>
           <button class="filter-tab" data-filter="known">Known</button>
         </div>
+        <!-- Mobile filter dropdown (≤768px) -->
+        <select id="filter-mob-select" class="filter-mob-select">
+          <option value="all">All</option>
+          <option value="unknown">Unknown</option>
+          <option value="known">Known</option>
+        </select>
       </div>
 
       <!-- Timeline -->
