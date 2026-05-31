@@ -699,7 +699,7 @@ function mpRenderTracklist() {
     return;
   }
 
-  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Recommend", hmm:"🤔 Hmmm", bad:"👎 Bad" };
+  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Good", hmm:"🤔 Hmmm", bad:"👎 Bad" };
   const RATING_CLS   = { love:"mp-tl-r-love", like:"mp-tl-r-like", rec:"mp-tl-r-rec", hmm:"mp-tl-r-hmm", bad:"mp-tl-r-bad" };
 
   tracks.innerHTML = _mpTracks.map((t, i) => {
