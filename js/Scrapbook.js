@@ -80,7 +80,7 @@ function renderTimeline(){
 const RATINGS=[
   {key:"love",    emoji:"😍", label:"Love",      cls:"scrp-rating-love"},
   {key:"like",    emoji:"🙂", label:"Like",      cls:"scrp-rating-like"},
-  {key:"rec",     emoji:"😐", label:"Recommend", cls:"scrp-rating-rec"},
+  {key:"rec",     emoji:"👌", label:"Good",       cls:"scrp-rating-rec"},
   {key:"hmm",     emoji:"🤔", label:"Hmmm",      cls:"scrp-rating-hmm"},
   {key:"bad",     emoji:"👎", label:"Bad",       cls:"scrp-rating-bad"}
 ];
@@ -715,7 +715,7 @@ function mpRenderTracklist() {
     return;
   }
 
-  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Recommend", hmm:"🤔 Hmmm", bad:"👎 Bad" };
+  const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"👌 Good", hmm:"🤔 Hmmm", bad:"👎 Bad" };
   const RATING_CLS   = { love:"mp-tl-r-love", like:"mp-tl-r-like", rec:"mp-tl-r-rec", hmm:"mp-tl-r-hmm", bad:"mp-tl-r-bad" };
 
   tracks.innerHTML = _mpTracks.map((t, i) => {

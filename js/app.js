@@ -1196,7 +1196,7 @@ const WP_MODES = [
   { key:"shuffle", svg:'<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>' }
 ];
 
-const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"😐 Recommend", hmm:"🤔 Hmmm", bad:"👎 Bad" };
+const RATING_LABEL = { love:"😍 Love", like:"🙂 Like", rec:"👌 Good", hmm:"🤔 Hmmm", bad:"👎 Bad" };
 const RATING_CLS   = { love:"wp-tl-r-love", like:"wp-tl-r-like", rec:"wp-tl-r-rec", hmm:"wp-tl-r-hmm", bad:"wp-tl-r-bad" };
 
 function wpEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
