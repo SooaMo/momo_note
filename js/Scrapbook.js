@@ -1,3 +1,4 @@
+import { isAdmin, promptAdmin } from './auth.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, orderBy }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -202,7 +203,7 @@ window.saveEditComment=async(postId,cid)=>{
   if(!newText)return;
   c.text=newText;c.edited=true;
   await savePost(post);renderTimeline();};
-window.confirmDelete=async(id)=>{if(!confirm("Delete this entry?"))return;posts=posts.filter(p=>p.id!==id);await deletePostDB(id);renderApp();};
+window.confirmDelete=async(id)=>{if(!isAdmin()){const ok=await promptAdmin();if(!ok)return;}if(!confirm("Delete this entry?"))return;posts=posts.filter(p=>p.id!==id);await deletePostDB(id);renderApp();};
 
 /* ── PIN ── */
 window.promptUnlock=()=>{const pin=getPin();if(!pin)return;const input=prompt("Enter PIN to view private entries:");if(input===pin){_pinUnlocked=true;renderTimeline();}else if(input!==null)alert("Wrong PIN.");};
@@ -501,7 +502,8 @@ window.openScrpEdit=(id)=>{
   if(post.tmpl==="music")setTimeout(bindMusicCatEvents,0);
 };
 window.closeScrpEdit=()=>{currentEditId=null;document.getElementById("scrp-edit-modal").classList.remove("open");};
-document.getElementById("scrp-btn-edit-save").addEventListener("click",async()=>{const id=+document.getElementById("scrp-edit-id").value;const post=posts.find(p=>p.id===id);if(!post)return;Object.assign(post,buildPost(post.tmpl,post));await savePost(post);closeScrpEdit();renderApp();});
+document.getElementById("scrp-btn-edit-save").addEventListener("click",async()=>{
+  if(!isAdmin()){const ok=await promptAdmin();if(!ok)return;}const id=+document.getElementById("scrp-edit-id").value;const post=posts.find(p=>p.id===id);if(!post)return;Object.assign(post,buildPost(post.tmpl,post));await savePost(post);closeScrpEdit();renderApp();});
 
 /* ── Filters ── */
 window.setTmplFilter=(tmpl)=>{tmplFilter=tmpl;document.querySelectorAll(".scrp-filter-item").forEach(el=>el.classList.toggle("scrp-filter-active",el.dataset.tmpl===tmpl));navFilter=null;renderApp();};

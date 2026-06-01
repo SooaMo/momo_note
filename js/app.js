@@ -1,3 +1,4 @@
+import { isAdmin, promptAdmin } from './auth.js';
 import {
   loadPosts,
   addPost,
@@ -313,6 +314,9 @@ function setupCompose(imgInputId, enInputId, koInputId, srcInputId, btnId, words
   });
 
   document.getElementById(btnId).addEventListener("click", async () => {
+    // Admin check
+    if (!isAdmin()) { const ok = await promptAdmin(); if (!ok) return; }
+
     const en  = document.getElementById(enInputId).value.trim();
     const ko  = document.getElementById(koInputId).value.trim();
     const src = document.getElementById(srcInputId).value.trim();
@@ -437,6 +441,7 @@ document.getElementById("edit-img").addEventListener("change", async e => {
 });
 
 document.getElementById("btn-edit-save").addEventListener("click", async () => {
+  if (!isAdmin()) { const ok = await promptAdmin(); if (!ok) return; }
   const id  = Number(document.getElementById("edit-id").value);
   const en  = document.getElementById("edit-en").value.trim();
   const ko  = document.getElementById("edit-ko").value.trim();
@@ -789,6 +794,7 @@ window.showMore = () => {
    Global handlers
 ══════════════════════════════ */
 window.handleDelete = async (id) => {
+  if (!isAdmin()) { const ok = await promptAdmin(); if (!ok) return; }
   if (!confirm("Delete this post?")) return;
   await deletePost(id);
   render();
