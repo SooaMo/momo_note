@@ -27,31 +27,39 @@ export function renderNav(filteredPosts) {
   const allActive = navFilter === null ? "nav-active" : "";
   html += `<div class="nav-all ${allActive}" onclick="setNavFilter(null);scrollToTop()">${allLabel}</div>`;
 
+  const now     = new Date();
+  const curY    = now.getFullYear();
+  const curM    = now.getMonth() + 1;
+
   Object.keys(tree).sort((a, b) => b - a).forEach(y => {
     const yKey    = `y${y}`;
     const yActive = navFilter && navFilter.y == y && !navFilter.m ? "nav-active" : "";
+    // current year stays open
+    const yOpen   = (+y === curY) ? "open" : "";
 
     html += `
       <div class="nav-year">
         <div class="nav-year-label ${yActive}" onclick="setNavFilter({y:${y}})">
-          <span class="nav-toggle open" id="tog-${yKey}" onclick="event.stopPropagation();toggleNav('${yKey}')">▶</span>
+          <span class="nav-toggle ${yOpen}" id="tog-${yKey}" onclick="event.stopPropagation();toggleNav('${yKey}')">▶</span>
           ${y}
         </div>
-        <div class="nav-children open" id="ch-${yKey}">
+        <div class="nav-children ${yOpen}" id="ch-${yKey}">
     `;
 
     Object.keys(tree[y]).sort((a, b) => b - a).forEach(m => {
       const mKey    = `m${y}-${m}`;
       const mName   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m - 1];
       const mActive = navFilter && navFilter.y == y && navFilter.m == m && !navFilter.day ? "nav-active" : "";
+      // only current year+month is open by default
+      const mOpen   = (+y === curY && +m === curM) ? "open" : "";
 
       html += `
         <div class="nav-month">
           <div class="nav-month-label ${mActive}" onclick="openMiniCal(${y},${m},event)">
-            <span class="nav-toggle open" id="tog-${mKey}" onclick="event.stopPropagation();toggleNav('${mKey}')">▶</span>
+            <span class="nav-toggle ${mOpen}" id="tog-${mKey}" onclick="event.stopPropagation();toggleNav('${mKey}')">▶</span>
             ${mName}
           </div>
-          <div class="nav-children open" id="ch-${mKey}">
+          <div class="nav-children ${mOpen}" id="ch-${mKey}">
       `;
 
       [...tree[y][m]].sort((a, b) => b - a).forEach(day => {
