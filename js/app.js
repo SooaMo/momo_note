@@ -1218,9 +1218,12 @@ function wpInit(){
 
   // populate cat select
   const cats = [...new Set(["all", ...state.tracks.flatMap(t => t.categories || ["Favorite"])])];
+  const optHtml = cats.map(c => `<option value="${wpEsc(c)}"${c === (state.cat||"Favorite") ? " selected" : ""}>${c === "all" ? "All" : wpEsc(c)}</option>`).join("");
   const sel  = document.getElementById("wp-cat-select");
-  if (sel) {
-    sel.innerHTML = cats.map(c => `<option value="${wpEsc(c)}"${c === (state.cat||"Favorite") ? " selected" : ""}>${c === "all" ? "All" : wpEsc(c)}</option>`).join("");
+  const selMob = document.getElementById("wp-cat-select-mob");
+  if (sel) sel.innerHTML = optHtml;
+  if (selMob) selMob.innerHTML = optHtml;
+  if (sel || selMob) {
     _wpTracks = state.cat && state.cat !== "all"
       ? state.tracks.filter(t => (t.categories||["Favorite"]).includes(state.cat))
       : state.tracks;
@@ -1241,20 +1244,33 @@ function wpUpdateBar(){
   if (tb) tb.textContent = text;
   // also update mobile popup title
   const mobTitle = document.getElementById("wp-mob-title");
-  if (mobTitle) mobTitle.textContent = text;
+  if (mobTitle) mobTitle.textContent = _wpCur >= 0 && _wpTracks.length ? (_wpTracks[_wpCur].title || "?") : "No music";
+  const mobArtist = document.getElementById("wp-mob-artist");
+  if (mobArtist) mobArtist.textContent = _wpCur >= 0 && _wpTracks.length ? (_wpTracks[_wpCur].artist || "") : "—";
   if (_wpTlOpen) wpRenderTracklist();
 }
 
 function wpSyncMode(){
-  const svg = document.getElementById("wp-mode-svg");
-  if (svg) svg.innerHTML = WP_MODES[_wpModeIdx].svg;
+  const m = WP_MODES[_wpModeIdx];
+  ["wp-mode-svg","wp-mode-svg-mob"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = m.svg;
+  });
+  // highlight active state on mobile button
+  const btn = document.getElementById("wp-mode-btn-mob");
+  if (btn) {
+    btn.style.color = "#D4621A";
+    btn.style.background = "#FDE8D8";
+  }
 }
 
 function wpSyncPlayBtn(){
-  const playSvg  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>';
-  const pauseSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>';
-  const b = document.getElementById("wp-play-btn");
-  if (b) { b.innerHTML = _wpPlaying ? pauseSvg : playSvg; b.classList.toggle('wp-play', !_wpPlaying); }
+  const playSvg  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>';
+  const pauseSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>';
+  ["wp-play-btn","wp-play-btn-mob"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.innerHTML = _wpPlaying ? pauseSvg : playSvg;
+  });
 }
 
 function wpPlay(){
@@ -1315,6 +1331,10 @@ window.wpChangeCat = (cat) => {
   if (_wpTlOpen) wpRenderTracklist();
   const el = document.getElementById("wp-tl-cat");
   if (el) el.textContent = cat === "all" ? "All" : cat;
+  // sync both selects
+  ["wp-cat-select","wp-cat-select-mob"].forEach(id => {
+    const s = document.getElementById(id); if (s) s.value = cat;
+  });
 };
 
 window.wpToggleCollapse = () => {

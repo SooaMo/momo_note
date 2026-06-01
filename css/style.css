@@ -2621,7 +2621,7 @@ mark.word-highlight:hover {
 .wp-marquee-track { display: flex; white-space: nowrap; font-size: 12px; color: #333; animation: mpScroll 12s linear infinite; }
 .wp-marquee-track span { padding-right: 48px; }
 .wp-controls-row { display: flex; align-items: center; gap: 2px; flex-shrink: 0; border-left: 1px solid #e8e5de; padding-left: 5px; margin-left: 2px; }
-.wp-icon-btn { background: none; border: none; cursor: pointer; color: #999; border-radius: 4px; line-height: 1; flex-shrink: 0; transition: color 0.12s, background 0.12s; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; }
+.wp-icon-btn { background: none; border: none; cursor: pointer; color: #999; border-radius: 4px; line-height: 1; flex-shrink: 0; transition: color 0.12s, background 0.12s; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
 .wp-icon-btn:hover { color: #D4621A; background: #FDE8D8; }
 .wp-icon-btn.wp-play { color: #D4621A; }
 .wp-vol { width: 50px; flex-shrink: 0; accent-color: #D4621A; cursor: pointer; border-left: 1px solid #e8e5de; padding-left: 5px; margin-left: 2px; }
@@ -2665,16 +2665,17 @@ mark.word-highlight:hover {
 }
 .wp-nav-music-btn:hover { background: #FDE8D8; }
 
-/* Mobile music popup */
+/* Mobile music popup — center screen */
 #wp-mob-popup {
   display: none; position: fixed;
-  top: 3.25rem; right: 0.75rem;
-  width: 270px; background: #fff;
-  border: 1px solid #E8C9B5; border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.14); padding: 14px 16px; z-index: 201;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px; background: #fff;
+  border: 1px solid #E8C9B5; border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18); padding: 16px; z-index: 501;
 }
 #wp-mob-popup.open { display: block; }
-.wp-mob-overlay { display: none; position: fixed; inset: 0; z-index: 200; }
+.wp-mob-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 500; }
 .wp-mob-overlay.open { display: block; }
 
 #fab { z-index: 202 !important; }
